@@ -361,6 +361,9 @@ func getFlagsValue() packiffer {
 	device := flag.Bool("d", true, "Specify devices display. Default is false")
 	limit := flag.Int("c", 1000, "Limit count of packets to sniff. Default is 1000")
 	snapshotLen = 1024
+
+	flag.Parse()
+
 	return packiffer{
 		interfaceName: *interfaceName,
 		promiscuous:   *promiscuous,
@@ -388,8 +391,6 @@ func main() {
 	flag.Usage = func() {
 		showhelp()
 	}
-
-	flag.Parse()
 
 	if helpFlag == true {
 		showhelp()
