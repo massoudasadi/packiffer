@@ -6,24 +6,14 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"runtime"
 	"strings"
 	"syscall"
 	"time"
-
-	"fyne.io/fyne"
-	"fyne.io/fyne/app"
-	"fyne.io/fyne/canvas"
-	"fyne.io/fyne/layout"
-	"fyne.io/fyne/theme"
-	"fyne.io/fyne/widget"
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
 	"github.com/google/gopacket/pcapgo"
-
-	"github.com/wcharczuk/go-chart"
 )
 
 var snapshotLen uint32
@@ -36,26 +26,12 @@ type packiffer struct {
 	socketDescriptor int
 	input            string
 	output           string
-	engine           string
 	device           bool
 	snapshotLen      int32
-	gui              bool
 	help             bool
 	err              error
 	timeout          time.Duration
 	handle           *pcap.Handle
-	packetCount      int64
-	httpCount        int64
-	tcpCount         int64
-	udpCount         int64
-	ipCount          int64
-	arpCount         int64
-	ethCount         int64
-	otherCount       int64
-	dumpPackets      bool
-	displayPackets   bool
-	displayChart     bool
-	packetLimit      int
 }
 
 var interfaceNameFlag bool
@@ -63,28 +39,22 @@ var promiscuousFlag bool
 var filterFlag bool
 var inputFlag bool
 var outputFlag bool
-var guiFlag bool
 var helpFlag bool
-var engineModeFlag bool
 var deviceFlag bool
 var limitFlag bool
 
-func (p *packiffer) afpacket() {
-
-}
-
-func (p *packiffer) customafpacket() {
-	fileDescriptor, err := syscall.Socket(syscall.AF_PACKET, syscall.SOCK_RAW, syscall.ETH_P_ALL)
-	if err != nil {
-		fmt.Println("Error: " + err.Error())
-		return
-	}
-	defer syscall.Close(fileDescriptor)
-}
-
-func (p *packiffer) pfring() {
-
-}
+var packetCount int64
+var httpCount int64
+var tcpCount int64
+var udpCount int64
+var ipCount int64
+var arpCount int64
+var ethCount int64
+var otherCount int64
+var dumpPackets bool
+var displayPackets bool
+var displayChart bool
+var packetLimit int
 
 func (p *packiffer) injectPacket() {
 
@@ -192,10 +162,10 @@ func (p *packiffer) dumpPacket(packets *gopacket.Packet) {
 	w := pcapgo.NewWriter(f)
 	w.WriteFileHeader(snapshotLen, layers.LinkTypeEthernet)
 	w.WritePacket((*packets).Metadata().CaptureInfo, (*packets).Data())
-	p.packetCount++
+	packetCount++
 
-	if limitFlag == true && (p.packetCount > int64(p.packetLimit)) {
-		fmt.Printf("\n%d packets captured on %s", p.packetLimit, p.interfaceName)
+	if limitFlag == true && (packetCount > int64(packetLimit)) {
+		fmt.Printf("\n%d packets captured on %s", packetLimit, p.interfaceName)
 		os.Exit(0)
 	}
 	defer f.Close()
@@ -239,79 +209,6 @@ func isFlagPassed(name string) bool {
 	return found
 }
 
-func (p *packiffer) handleui() {
-	a := app.New()
-	a.Settings().SetTheme(theme.LightTheme())
-	w := a.NewWindow("Packiffer")
-	w.Resize(fyne.NewSize(800, 600))
-
-	image := canvas.NewImageFromFile("/home/massoud/packiffer/packiffer.png")
-	image.Resize(fyne.NewSize(600, 200))
-	image.SetMinSize(fyne.NewSize(600, 200))
-
-	logo := fyne.NewContainerWithLayout(layout.NewHBoxLayout(),
-		layout.NewSpacer(), image, layout.NewSpacer())
-
-	hello := widget.NewLabel("Cross-Platform Packet Sniffer")
-
-	message := fyne.NewContainerWithLayout(layout.NewHBoxLayout(),
-		layout.NewSpacer(), hello, layout.NewSpacer())
-
-	button := widget.NewButton("Start Sniffing ...", func() {
-		hello.SetText("Sniffing")
-	})
-
-	interfaceTextBox := widget.NewEntry()
-	interfaceTextBox.SetPlaceHolder("Enter interface name ...")
-
-	filterTextBox := widget.NewEntry()
-	filterTextBox.SetPlaceHolder("Enter Filter ...")
-
-	spaceContainer := fyne.NewContainerWithLayout(layout.NewGridWrapLayout(fyne.NewSize(30, 1)),
-		widget.NewLabel(""))
-
-	combo := widget.NewSelect([]string{"libpcap", "pfring", "afpacket"}, func(value string) {
-
-	})
-	combo.PlaceHolder = "Select Engine ..."
-
-	container := fyne.NewContainerWithLayout(layout.NewHBoxLayout(),
-		interfaceTextBox,
-		spaceContainer,
-		filterTextBox,
-		spaceContainer,
-		combo,
-		spaceContainer,
-		button)
-
-	w.SetContent(fyne.NewContainerWithLayout(layout.NewVBoxLayout(),
-		logo,
-		message,
-		widget.NewLabel(""),
-		container))
-	w.ShowAndRun()
-}
-
-func (p *packiffer) displaychart() {
-	pie := chart.PieChart{
-		Width:  512,
-		Height: 512,
-		Values: []chart.Value{
-			{Value: float64(p.packetCount), Label: "ALL"},
-			{Value: float64(p.udpCount), Label: "UDP"},
-			{Value: float64(p.ipCount), Label: "IP"},
-			{Value: float64(p.tcpCount), Label: "TCP"},
-			{Value: float64(p.arpCount), Label: "ARP"},
-			{Value: float64(p.ethCount), Label: "Ethernet"},
-			{Value: float64(p.otherCount), Label: "Other"},
-			{Value: float64(p.httpCount), Label: "HTTP"},
-		},
-	}
-	chartOutput, _ := os.Create("chartOutput.png")
-	defer chartOutput.Close()
-	pie.Render(chart.PNG, chartOutput)
-}
-
 func ctrlCHandler() {
 	c := make(chan os.Signal)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
@@ -329,7 +226,6 @@ func showhelp() {
 	fmt.Printf("-f <filter>\n\t\tfilter query to set.\t e.g. -f all\n")
 	fmt.Printf("-r <file>\n\t\tinput file to read.\t e.g. -r packet.pcap\n")
 	fmt.Printf("-w <file>\n\t\toutput file to write.\t e.g. -w packet.pcap\n")
-	fmt.Printf("-g\n\t\tgui mode\n")
 	fmt.Printf("-h\n\t\tdisplay help\n")
 	fmt.Printf("-e <engine>\n\t\tpacket capture engine can be libpcap (Cross-Platform), pfring (Linux Only) or afpacket (Linux Only). default is libpcap (libpcap implemented with AF_PACKET on linux).\t e.g. -e libpcap\n")
 	fmt.Printf("-d\n\t\tdisplay list of devices\n")
@@ -342,40 +238,36 @@ func checkFlagsPassed() {
 	filterFlag = isFlagPassed("f")
 	inputFlag = isFlagPassed("r")
 	outputFlag = isFlagPassed("w")
-	guiFlag = isFlagPassed("g")
 	helpFlag = isFlagPassed("h")
-	engineModeFlag = isFlagPassed("e")
 	deviceFlag = isFlagPassed("d")
 	limitFlag = isFlagPassed("c")
 }
 
-func getFlagsValue() packiffer {
+func getFlagsValue() *packiffer {
 	interfaceName := flag.String("i", "eth0", "Specify interface name. Default is eth0")
 	promiscuous := flag.Bool("p", false, "Specify promiscuous mode. Default is false")
 	filter := flag.String("f", "all", "Specify filter query. Default is all")
 	input := flag.String("r", "input", "Specify input file name. Default is interfacename")
 	output := flag.String("w", "output", "Specify output file name. Default is interfacename")
-	gui := flag.Bool("g", false, "Specify gui mode. Default is false")
 	help := flag.Bool("h", false, "Specify help display. Default is false")
-	engineMode := flag.String("e", "libpcap", "Specify packet capture engine. Default is libpcap")
 	device := flag.Bool("d", true, "Specify devices display. Default is false")
 	limit := flag.Int("c", 1000, "Limit count of packets to sniff. Default is 1000")
+
+	packetLimit = *limit
+
 	snapshotLen = 1024
 
 	flag.Parse()
 
-	return packiffer{
+	return &packiffer{
 		interfaceName: *interfaceName,
 		promiscuous:   *promiscuous,
 		filter:        *filter,
-		engine:        *engineMode,
 		input:         *input,
 		output:        *output,
 		device:        *device,
 		snapshotLen:   1024,
 		timeout:       30 * time.Second,
-		packetLimit:   *limit,
-		gui:           *gui,
 		help:          *help}
 
 }
@@ -397,72 +289,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	if guiFlag == true {
-		p.handleui()
-		os.Exit(0)
-	}
-
-	switch runtime.GOOS {
-	case "linux":
-		if p.engine == "afpacket" {
-			p.afpacket()
-		} else if p.engine == "pfring" {
-			p.pfring()
-		} else if p.engine == "libpcap" {
-			p.pcap()
-		} else {
-			fmt.Printf("\nUnknown engine using pcap instead")
-			p.pcap()
-		}
-	case "windows":
-		if p.engine == "afpacket" {
-			fmt.Println(string("AF_PACKET not supported on Windows"))
-			fmt.Printf("\nusing pcap instead")
-			p.pcap()
-		} else if p.engine == "pfring" {
-			fmt.Println(string("PF_RING not supported on Windows"))
-			fmt.Printf("\nusing pcap instead")
-			p.pcap()
-		} else if p.engine == "libpcap" {
-			p.pcap()
-		} else {
-			fmt.Printf("\nUnknown engine using pcap instead")
-			p.pcap()
-		}
-	case "darwin":
-		if p.engine == "afpacket" {
-			fmt.Println(string("AF_PACKET not supported on Mac"))
-			fmt.Printf("\nusing pcap instead")
-			p.pcap()
-		} else if p.engine == "pfring" {
-			fmt.Println(string("PF_RING not supported on Mac"))
-			fmt.Printf("\nusing pcap instead")
-			p.pcap()
-		} else if p.engine == "libpcap" {
-			p.pcap()
-		} else {
-			fmt.Printf("\nUnknown engine using pcap instead")
-			p.pcap()
-		}
-	case "freebsd", "openbsd", "netbsd":
-		if p.engine == "afpacket" {
-			fmt.Println(string("AF_PACKET not supported on BSD"))
-			fmt.Printf("\nusing pcap instead")
-			p.pcap()
-		} else if p.engine == "pfring" {
-			fmt.Println(string("PF_RING not supported on BSD"))
-			fmt.Printf("\nusing pcap instead")
-			p.pcap()
-		} else if p.engine == "libpcap" {
-			p.pcap()
-		} else {
-			fmt.Printf("\nUnknown engine using pcap instead")
-			p.pcap()
-		}
-	default:
-		fmt.Printf("%s not supported.\n", runtime.GOOS)
-		os.Exit(0)
-	}
+	p.pcap()
 
 	os.Exit(0)
 }
