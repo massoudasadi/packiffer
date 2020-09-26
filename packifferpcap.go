@@ -1,4 +1,6 @@
-package main
+// +build linux windows darwin freebsd netbsd openbsd
+
+package packiffer
 
 import (
 	"flag"
