@@ -43,6 +43,16 @@ func (p *packiffer) packetInfo(packet *gopacket.Packet) {
 		fmt.Println()
 	}
 
+	udpLayer := (*packet).Layer(layers.LayerTypeUDP)
+	if udpLayer != nil {
+		fmt.Println("UDP layer detected.")
+		udp, _ := udpLayer.(*layers.UDP)
+
+		fmt.Printf("From port %d to %d\n", udp.SrcPort, udp.DstPort)
+		fmt.Println("Checksum number: ", udp.Checksum)
+		fmt.Println()
+	}
+
 	fmt.Println("All packet layers:")
 	for _, layer := range (*packet).Layers() {
 		fmt.Println("- ", layer.LayerType())

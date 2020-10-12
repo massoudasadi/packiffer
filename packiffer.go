@@ -39,6 +39,7 @@ var outputFlag bool
 var helpFlag bool
 var deviceFlag bool
 var limitFlag bool
+var timeoutFlag bool
 
 var packetCount int64
 var httpCount int64
@@ -84,6 +85,7 @@ func showhelp() {
 	fmt.Printf("-e <engine>\n\t\tpacket capture engine can be libpcap (Cross-Platform), pfring (Linux Only) or afpacket (Linux Only). default is libpcap (libpcap implemented with AF_PACKET on linux).\t e.g. -e libpcap\n")
 	fmt.Printf("-d\n\t\tdisplay list of devices\n")
 	fmt.Printf("-c <file>\n\t\tlimit count of packets to sniff.\t e.g. -c 100\n")
+	fmt.Printf("-t <value>\n\t\tlimit sniffing timeout.\t e.g. -t 30\n")
 }
 
 func checkFlagsPassed() {
@@ -95,6 +97,7 @@ func checkFlagsPassed() {
 	helpFlag = isFlagPassed("h")
 	deviceFlag = isFlagPassed("d")
 	limitFlag = isFlagPassed("c")
+	timeoutFlag = isFlagPassed("t")
 }
 
 func getFlagsValue() *packiffer {
@@ -106,6 +109,7 @@ func getFlagsValue() *packiffer {
 	help := flag.Bool("h", false, "Specify help display. Default is false")
 	device := flag.Bool("d", true, "Specify devices display. Default is false")
 	limit := flag.Int("c", 1000, "Limit count of packets to sniff. Default is 1000")
+	timeout := flag.Int("t", 30, "limit sniffing timeout. Default is 30 seconds")
 
 	packetLimit = *limit
 
@@ -121,7 +125,7 @@ func getFlagsValue() *packiffer {
 		output:        *output,
 		device:        *device,
 		snapshotLen:   1024,
-		timeout:       30 * time.Second,
+		timeout:       time.Duration(*timeout) * time.Second,
 		help:          *help}
 
 }

@@ -24,10 +24,19 @@ func (p *packiffer) pcap() {
 		p.displayDevices(devices)
 		os.Exit(0)
 	}
-	if inputFlag == true {
+	if inputFlag == true && outputFlag == false {
 		p.openInputPcap()
 	}
-	p.openLivePcap()
+	if outputFlag == true && inputFlag == false {
+		p.openLivePcap()
+	}
+	if inputFlag == true && outputFlag == true {
+		p.openTransformPcap()
+	}
+}
+
+func (p *packiffer) openTransformPcap() {
+
 }
 
 func (p *packiffer) openLivePcap() {
