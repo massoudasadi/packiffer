@@ -27,7 +27,7 @@ func (p *packiffer) pcap() {
 	if inputFlag == true && outputFlag == false {
 		p.openInputPcap()
 	}
-	if outputFlag == true && inputFlag == false {
+	if outputFlag == true && inputFlag == false || outputFlag == false && inputFlag == false {
 		p.openLivePcap()
 	}
 	if inputFlag == true && outputFlag == true {

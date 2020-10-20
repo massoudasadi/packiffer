@@ -2,6 +2,6 @@
 
 package packiffer
 
-func pfring() {
+func (p *packiffer) pfring() {
 
 }

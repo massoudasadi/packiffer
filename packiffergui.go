@@ -2,6 +2,6 @@
 
 package packiffer
 
-func handleui() {
+func (p *packiffer) handleui() {
 
 }

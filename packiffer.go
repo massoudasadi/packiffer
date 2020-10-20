@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"runtime"
 	"syscall"
 	"time"
 
@@ -27,6 +28,7 @@ type packiffer struct {
 	snapshotLen      int32
 	help             bool
 	err              error
+	engine           string
 	timeout          time.Duration
 	handle           *pcap.Handle
 }
@@ -40,6 +42,7 @@ var helpFlag bool
 var deviceFlag bool
 var limitFlag bool
 var timeoutFlag bool
+var engineModeFlag bool
 
 var packetCount int64
 var httpCount int64
@@ -86,6 +89,7 @@ func showhelp() {
 	fmt.Printf("-d\n\t\tdisplay list of devices\n")
 	fmt.Printf("-c <file>\n\t\tlimit count of packets to sniff.\t e.g. -c 100\n")
 	fmt.Printf("-t <value>\n\t\tlimit sniffing timeout.\t e.g. -t 30\n")
+
 }
 
 func checkFlagsPassed() {
@@ -98,6 +102,7 @@ func checkFlagsPassed() {
 	deviceFlag = isFlagPassed("d")
 	limitFlag = isFlagPassed("c")
 	timeoutFlag = isFlagPassed("t")
+	engineModeFlag = isFlagPassed("e")
 }
 
 func getFlagsValue() *packiffer {
@@ -110,6 +115,7 @@ func getFlagsValue() *packiffer {
 	device := flag.Bool("d", true, "Specify devices display. Default is false")
 	limit := flag.Int("c", 1000, "Limit count of packets to sniff. Default is 1000")
 	timeout := flag.Int("t", 30, "limit sniffing timeout. Default is 30 seconds")
+	engineMode := flag.String("e", "libpcap", "Specify packet capture engine. Default is libpcap")
 
 	packetLimit = *limit
 
@@ -125,6 +131,7 @@ func getFlagsValue() *packiffer {
 		output:        *output,
 		device:        *device,
 		snapshotLen:   1024,
+		engine:        *engineMode,
 		timeout:       time.Duration(*timeout) * time.Second,
 		help:          *help}
 
@@ -147,7 +154,67 @@ func main() {
 		os.Exit(0)
 	}
 
-	p.pcap()
+	switch runtime.GOOS {
+	case "linux":
+		if p.engine == "afpacket" {
+			p.afpacket()
+		} else if p.engine == "pfring" {
+			p.pfring()
+		} else if p.engine == "libpcap" {
+			p.pcap()
+		} else {
+			fmt.Printf("\nUnknown engine using pcap instead")
+			p.pcap()
+		}
+	case "windows":
+		if p.engine == "afpacket" {
+			fmt.Println(string("AF_PACKET not supported on Windows"))
+			fmt.Printf("\nusing pcap instead")
+			p.pcap()
+		} else if p.engine == "pfring" {
+			fmt.Println(string("PF_RING not supported on Windows"))
+			fmt.Printf("\nusing pcap instead")
+			p.pcap()
+		} else if p.engine == "libpcap" {
+			p.pcap()
+		} else {
+			fmt.Printf("\nUnknown engine using pcap instead")
+			p.pcap()
+		}
+	case "darwin":
+		if p.engine == "afpacket" {
+			fmt.Println(string("AF_PACKET not supported on Mac"))
+			fmt.Printf("\nusing pcap instead")
+			p.pcap()
+		} else if p.engine == "pfring" {
+			fmt.Println(string("PF_RING not supported on Mac"))
+			fmt.Printf("\nusing pcap instead")
+			p.pcap()
+		} else if p.engine == "libpcap" {
+			p.pcap()
+		} else {
+			fmt.Printf("\nUnknown engine using pcap instead")
+			p.pcap()
+		}
+	case "freebsd", "openbsd", "netbsd":
+		if p.engine == "afpacket" {
+			fmt.Println(string("AF_PACKET not supported on BSD"))
+			fmt.Printf("\nusing pcap instead")
+			p.pcap()
+		} else if p.engine == "pfring" {
+			fmt.Println(string("PF_RING not supported on BSD"))
+			fmt.Printf("\nusing pcap instead")
+			p.pcap()
+		} else if p.engine == "libpcap" {
+			p.pcap()
+		} else {
+			fmt.Printf("\nUnknown engine using pcap instead")
+			p.pcap()
+		}
+	default:
+		fmt.Printf("%s not supported.\n", runtime.GOOS)
+		os.Exit(0)
+	}
 
 	os.Exit(0)
 }

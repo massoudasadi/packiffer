@@ -2,6 +2,6 @@
 
 package packiffer
 
-func afpacket() {
+func (p *packiffer) afpacket() {
 
 }
