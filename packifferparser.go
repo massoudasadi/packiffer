@@ -1,6 +1,6 @@
 // +build linux windows darwin freebsd netbsd openbsd
 
-package packiffer
+package main
 
 import (
 	"fmt"

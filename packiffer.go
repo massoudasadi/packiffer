@@ -1,6 +1,6 @@
 // +build linux windows darwin freebsd netbsd openbsd
 
-package packiffer
+package main
 
 import (
 	"flag"
@@ -138,6 +138,15 @@ func getFlagsValue() *packiffer {
 }
 
 func main() {
+
+	// psock, perror := CreateSocket()
+	// if perror != nil && psock != 0 {
+
+	// }
+
+	// GetInterfaceListAfPacket()
+
+	// GetInterfaceList()
 
 	ctrlCHandler()
 

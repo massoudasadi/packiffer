@@ -1,6 +1,6 @@
 // +build linux
 
-package packiffer
+package main
 
 func (p *packiffer) pfring() {
 

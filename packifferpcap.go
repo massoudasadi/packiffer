@@ -1,6 +1,6 @@
 // +build linux windows darwin freebsd netbsd openbsd
 
-package packiffer
+package main
 
 import (
 	"fmt"
@@ -50,7 +50,6 @@ func (p *packiffer) openLivePcap() {
 	}
 	packets := gopacket.NewPacketSource(p.handle, p.handle.LinkType())
 	for packet := range packets.Packets() {
-		//go p.packetInfo(&packet)
 		go p.dumpPacket(&packet)
 	}
 }
