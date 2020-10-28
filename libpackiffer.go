@@ -41,17 +41,6 @@ import (
 	"syscall"
 )
 
-// CreateSocket returns AF_PACKET socket file descriptor
-func CreateSocket() (int, error) {
-	psocket, perror := syscall.Socket(syscall.AF_PACKET, syscall.SOCK_RAW, syscall.ETH_P_ALL)
-	defer syscall.Close(psocket)
-	if perror != nil {
-		fmt.Println("Error: " + perror.Error())
-		return psocket, perror
-	}
-	return psocket, perror
-}
-
 //GetInterfaceListAfPacket returns list of network interfaces has AF_PACKET family type
 func GetInterfaceListAfPacket() {
 	var addrs *C.struct_ifaddrs
@@ -70,6 +59,17 @@ func GetInterfaceListAfPacket() {
 	defer C.freeifaddrs(addrs)
 }
 
+// CreateSocket returns AF_PACKET socket file descriptor
+func CreateSocket() (int, error) {
+	psocket, perror := syscall.Socket(syscall.AF_PACKET, syscall.SOCK_RAW, syscall.ETH_P_ALL)
+	defer syscall.Close(psocket)
+	if perror != nil {
+		fmt.Println("Error: " + perror.Error())
+		return psocket, perror
+	}
+	return psocket, perror
+}
+
 // GetInterfaceList returns list of network interfaces
 func GetInterfaceList() {
 	interfaceList, _ := net.Interfaces()
@@ -78,4 +78,16 @@ func GetInterfaceList() {
 			fmt.Println(item.Name)
 		}
 	}
+}
+
+// SetPacketVersion set packet version to 3
+func SetPacketVersion(socketDescriptor int) (int, error) {
+	SolPacket := 263
+	PacketVersion := 10
+	PacketV3 := 2
+	psetsockopt := syscall.SetsockoptInt(socketDescriptor, SolPacket, PacketVersion, PacketV3)
+	if psetsockopt != nil {
+		return 1, psetsockopt
+	}
+	return -1, psetsockopt
 }

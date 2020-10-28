@@ -139,15 +139,6 @@ func getFlagsValue() *packiffer {
 
 func main() {
 
-	// psock, perror := CreateSocket()
-	// if perror != nil && psock != 0 {
-
-	// }
-
-	// GetInterfaceListAfPacket()
-
-	// GetInterfaceList()
-
 	ctrlCHandler()
 
 	p := getFlagsValue()
