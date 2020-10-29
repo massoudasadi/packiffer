@@ -34,30 +34,32 @@ package main
 //#include <sys/wait.h>
 //#include <pthread.h>
 //#include <sys/syscall.h>
-import "C"
+//import "C"
 import (
+	"errors"
 	"fmt"
 	"net"
 	"syscall"
+	"unsafe"
 )
 
-//GetInterfaceListAfPacket returns list of network interfaces has AF_PACKET family type
-func GetInterfaceListAfPacket() {
-	var addrs *C.struct_ifaddrs
-	var tmp *C.struct_ifaddrs
-	C.getifaddrs(&addrs)
-	tmp = addrs
-	for {
-		if tmp.ifa_addr != nil && tmp.ifa_addr.sa_family == syscall.AF_PACKET {
-			fmt.Println("interface name:" + C.GoString(tmp.ifa_name))
-		}
-		tmp = tmp.ifa_next
-		if tmp == nil {
-			break
-		}
-	}
-	defer C.freeifaddrs(addrs)
-}
+// //GetInterfaceListAfPacket returns list of network interfaces has AF_PACKET family type
+// func GetInterfaceListAfPacket() {
+// 	var addrs *C.struct_ifaddrs
+// 	var tmp *C.struct_ifaddrs
+// 	C.getifaddrs(&addrs)
+// 	tmp = addrs
+// 	for {
+// 		if tmp.ifa_addr != nil && tmp.ifa_addr.sa_family == syscall.AF_PACKET {
+// 			fmt.Println("interface name:" + C.GoString(tmp.ifa_name))
+// 		}
+// 		tmp = tmp.ifa_next
+// 		if tmp == nil {
+// 			break
+// 		}
+// 	}
+// 	defer C.freeifaddrs(addrs)
+// }
 
 // CreateSocket returns AF_PACKET socket file descriptor
 func CreateSocket() (int, error) {
@@ -82,12 +84,43 @@ func GetInterfaceList() {
 
 // SetPacketVersion set packet version to 3
 func SetPacketVersion(socketDescriptor int) (int, error) {
-	SolPacket := 263
-	PacketVersion := 10
-	PacketV3 := 2
-	psetsockopt := syscall.SetsockoptInt(socketDescriptor, SolPacket, PacketVersion, PacketV3)
+	PacketVersion := 10 // PACKET_VERSION
+	PacketV3 := 2       // TPACKET_V3
+	psetsockopt := syscall.SetsockoptInt(socketDescriptor, syscall.SOL_PACKET, PacketVersion, PacketV3)
 	if psetsockopt != nil {
 		return 1, psetsockopt
 	}
 	return -1, psetsockopt
+}
+
+// GetInterfaceIndex returns interface index
+func GetInterfaceIndex(interfaceName string) (int, error) {
+	interfaceList, perror := net.Interfaces()
+	if interfaceList != nil {
+		for _, item := range interfaceList {
+			if item.Name == interfaceName {
+				return item.Index, nil
+			}
+		}
+		return -1, errors.New("interface not found")
+	}
+	return -1, perror
+}
+
+// FillLinkLayer fill RawSockaddrLinklayer struct (sockaddr_ll)
+func FillLinkLayer(interfaceIndex int) syscall.RawSockaddrLinklayer {
+	return syscall.RawSockaddrLinklayer{
+		Family:   syscall.AF_PACKET,     // sll_family
+		Protocol: syscall.ETH_P_ALL,     // sll_ifindex
+		Ifindex:  int32(interfaceIndex)} // sll_protocol
+}
+
+// BindSocket binds socket
+func BindSocket(socketDescriptor int, linklayer syscall.RawSockaddrLinklayer) error {
+	_, _, perror := syscall.Syscall(syscall.SYS_BIND, uintptr(socketDescriptor),
+		uintptr(unsafe.Pointer(&linklayer)), unsafe.Sizeof(linklayer))
+	if perror > 0 {
+		return errors.New("can not bind socket")
+	}
+	return nil
 }
