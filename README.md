@@ -1,7 +1,7 @@
 <img src="./packiffer.png">
 
 # Packiffer
-Packiffer is a lightweight single file cross-platform packet sniffer that let you sniff packets live from network interface or offline pcap files. you can also apply filters and promiscuous mode on interface.
+Packiffer is a lightweight cross-platform packet sniffer that let you sniff packets live from network interface or offline pcap files. you can also apply filters and promiscuous mode on interface.
 
 # Prerequisites For Binary
 Libpcap v1.9.1

@@ -8,14 +8,10 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 	"time"
 
-	"github.com/google/gopacket"
-	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
-	"github.com/google/gopacket/pcapgo"
 )
 
 var snapshotLen uint32
@@ -27,24 +23,40 @@ type packiffer struct {
 	filter           string
 	socketDescriptor int
 	input            string
-	output           string
+	outputFileName   string
+	outputDirectory  string
+	limit            int
 	device           bool
 	snapshotLen      int32
 	help             bool
 	err              error
 	timeout          time.Duration
 	handle           *pcap.Handle
+	mode             string
 }
 
-var interfaceNameFlag bool
-var promiscuousFlag bool
-var filterFlag bool
-var inputFlag bool
-var outputFlag bool
+var sniffInterfaceNameFlag bool
+var sniffPromiscuousFlag bool
+var sniffFilterFlag bool
+var sniffoutputdirectoryFlag bool
+var sniffoutputfilenameFlag bool
+var sniffsnapshotlengthFlag bool
+var snifftimeoutFlag bool
+var snifflimitFlag bool
+
+var transformInterfaceNameFlag bool
+var transformFilterFlag bool
+var transformInputFlag bool
+var transformoutputdirectoryFlag bool
+var transformoutputfilenameFlag bool
+var transformlimitFlag bool
+
+var inspectInputFlag bool
+var inspectFilterFlag bool
+var inspectlimitFlag bool
+
 var helpFlag bool
 var deviceFlag bool
-var limitFlag bool
-var timeoutFlag bool
 
 var packetCount int64
 var httpCount int64
@@ -75,6 +87,7 @@ func ctrlCHandler() {
 	go func() {
 		<-c
 		fmt.Println("\r- Ctrl+C pressed in Terminal")
+		fmt.Println("packets successfully dumped")
 		os.Exit(0)
 	}()
 }
@@ -94,206 +107,118 @@ func showhelp() {
 }
 
 func checkFlagsPassed() {
-	interfaceNameFlag = isFlagPassed("i")
-	promiscuousFlag = isFlagPassed("p")
-	filterFlag = isFlagPassed("f")
-	inputFlag = isFlagPassed("r")
-	outputFlag = isFlagPassed("w")
-	helpFlag = isFlagPassed("h")
-	deviceFlag = isFlagPassed("d")
-	limitFlag = isFlagPassed("c")
-	timeoutFlag = isFlagPassed("t")
+	sniffInterfaceNameFlag = isFlagPassed("i")
+	sniffPromiscuousFlag = isFlagPassed("p")
+	sniffFilterFlag = isFlagPassed("f")
+	sniffoutputdirectoryFlag = isFlagPassed("od")
+	sniffoutputfilenameFlag = isFlagPassed("of")
+	sniffsnapshotlengthFlag = isFlagPassed("sl")
+	snifftimeoutFlag = isFlagPassed("t")
+	snifflimitFlag = isFlagPassed("c")
 }
 
 func getFlagsValue() *packiffer {
-	interfaceName := flag.String("i", "eth0", "Specify interface name. Default is eth0")
-	promiscuous := flag.Bool("p", false, "Specify promiscuous mode. Default is false")
-	filter := flag.String("f", "all", "Specify filter query. Default is all")
-	input := flag.String("r", "input", "Specify input file name. Default is interfacename")
-	output := flag.String("w", "output", "Specify output file name. Default is interfacename")
+
+	sniffCommand := flag.NewFlagSet("sniff", flag.ExitOnError)
+	sniffInterfaceName := sniffCommand.String("i", "eth0", "Specify interface name. Default is eth0")
+	sniffPromiscuous := sniffCommand.Bool("p", false, "Specify promiscuous mode. Default is false")
+	sniffFilter := sniffCommand.String("f", "all", "Specify filter query. Default is all")
+	sniffoutputdirectory := sniffCommand.String("od", "packiffer", "Specify output directory. Default is packiffer directory")
+	sniffoutputfilename := sniffCommand.String("of", "interface", "Specify output file name. Default is interface name")
+	sniffsnapshotlength := sniffCommand.Int("sl", 1024, "Specify Snapshot Lenght. Default is 2014")
+	snifftimeout := sniffCommand.Int("t", 30, "limit sniffing timeout. Default is 30 seconds")
+	snifflimit := sniffCommand.Int("c", 1000, "Limit count of packets to sniff. Default is 1000")
+
+	// transformCommand := flag.NewFlagSet("transform", flag.ExitOnError)
+	// transformInterfaceName := transformCommand.String("i", "eth0", "Specify interface name. Default is eth0")
+	// transformFilter := transformCommand.String("f", "all", "Specify filter query. Default is all")
+	// transformInput := transformCommand.String("in", "", "Specify input pcap file")
+	// transformoutputdirectory := transformCommand.String("od", "packiffer", "Specify output directory. Default is packiffer directory")
+	// transformoutputfilename := transformCommand.String("of", "interface", "Specify output file name. Default is interface name")
+	// transformlimit := transformCommand.Int("c", 1000, "Limit count of packets to sniff. Default is 1000")
+
+	// inspectCommand := flag.NewFlagSet("inspect", flag.ExitOnError)
+	// inspectInput := inspectCommand.String("in", "", "Specify input pcap file")
+	// inspectFilter := inspectCommand.String("f", "all", "Specify filter query. Default is all")
+	// inspectlimit := inspectCommand.Int("c", 1000, "Limit count of packets to sniff. Default is 1000")
+
 	help := flag.Bool("h", false, "Specify help display. Default is false")
 	device := flag.Bool("d", true, "Specify devices display. Default is false")
-	limit := flag.Int("c", 1000, "Limit count of packets to sniff. Default is 1000")
-	timeout := flag.Int("t", 30, "limit sniffing timeout. Default is 30 seconds")
-
-	packetLimit = *limit
-
-	snapshotLen = 1024
 
 	flag.Parse()
 
-	return &packiffer{
-		interfaceName: *interfaceName,
-		promiscuous:   *promiscuous,
-		filter:        *filter,
-		input:         *input,
-		output:        *output,
-		device:        *device,
-		snapshotLen:   1024,
-		timeout:       time.Duration(*timeout) * time.Second,
-		help:          *help}
-
-}
-
-func (p *packiffer) packetInfo(packet *gopacket.Packet) {
-	ethernetLayer := (*packet).Layer(layers.LayerTypeEthernet)
-	if ethernetLayer != nil {
-		fmt.Println("Ethernet layer detected.")
-		ethernetPacket, _ := ethernetLayer.(*layers.Ethernet)
-		fmt.Println("Source MAC: ", ethernetPacket.SrcMAC)
-		fmt.Println("Destination MAC: ", ethernetPacket.DstMAC)
-		fmt.Println("Ethernet type: ", ethernetPacket.EthernetType)
-		fmt.Println()
-	}
-
-	arpLayer := (*packet).Layer(layers.LayerTypeARP)
-	if arpLayer != nil {
-		fmt.Println("Arp layer detected.")
-		arp, _ := arpLayer.(*layers.ARP)
-		fmt.Printf("AddrType: %d", arp.AddrType)
-		fmt.Printf("Protocol: %d", arp.Protocol)
-		fmt.Printf("SourceHwAddress: %d", arp.SourceHwAddress)
-		fmt.Printf("SourceProtAddress: %d", arp.SourceProtAddress)
-		fmt.Printf("DstHwAddress: %d", arp.DstHwAddress)
-		fmt.Printf("DstProtAddress: %d", arp.DstProtAddress)
-		fmt.Println()
-	}
-
-	ipv4Layer := (*packet).Layer(layers.LayerTypeIPv4)
-	if ipv4Layer != nil {
-		fmt.Println("IPv4 layer detected.")
-		ipv4, _ := ipv4Layer.(*layers.IPv4)
-		fmt.Printf("From %s to %s", ipv4.SrcIP, ipv4.DstIP)
-		fmt.Println("Protocol: ", ipv4.Protocol)
-		fmt.Println("TTL: ", ipv4.TTL)
-		fmt.Println("TOS: ", ipv4.TOS)
-		fmt.Println("IHL: ", ipv4.IHL)
-	}
-
-	tcpLayer := (*packet).Layer(layers.LayerTypeTCP)
-	if tcpLayer != nil {
-		fmt.Println("TCP layer detected.")
-		tcp, _ := tcpLayer.(*layers.TCP)
-		fmt.Printf("From port %d to %d", tcp.SrcPort, tcp.DstPort)
-		fmt.Println("Sequence number: ", tcp.Seq)
-		fmt.Println("ACK: ", tcp.Ack)
-	}
-
-	udpLayer := (*packet).Layer(layers.LayerTypeUDP)
-	if udpLayer != nil {
-		fmt.Println("UDP layer detected.")
-		udp, _ := udpLayer.(*layers.UDP)
-		fmt.Printf("From port %d to %d\n", udp.SrcPort, udp.DstPort)
-		fmt.Println("Checksum number: ", udp.Checksum)
-		fmt.Println()
-	}
-
-	fmt.Println("All packet layers:")
-	for _, layer := range (*packet).Layers() {
-		fmt.Println("- ", layer.LayerType())
-	}
-
-	applicationLayer := (*packet).ApplicationLayer()
-	if applicationLayer != nil {
-		fmt.Println("Application layer/Payload found.")
-		fmt.Printf("%s\n", applicationLayer.Payload())
-
-		if strings.Contains(string(applicationLayer.Payload()), "HTTP") {
-			fmt.Println("HTTP found!")
-		}
-		if strings.Contains(string(applicationLayer.Payload()), "FTP") {
-			fmt.Println("FTP found!")
-		}
-	}
-
-	if err := (*packet).ErrorLayer(); err != nil {
-		fmt.Println("Error decoding some part of the packet:", err)
-	}
-}
-
-func (p *packiffer) dumpPacket(packets *gopacket.Packet, w *pcapgo.Writer) {
-	w.WritePacket((*packets).Metadata().CaptureInfo, (*packets).Data())
-	packetCount++
-	if limitFlag == true && (packetCount > int64(packetLimit)) {
-		fmt.Printf("\n%d packets captured on %s", packetLimit, p.interfaceName)
+	if helpFlag == true {
+		showhelp()
 		os.Exit(0)
 	}
-}
 
-func (p *packiffer) injectPacket() {
-
-}
-
-func (p *packiffer) pcap() {
 	if deviceFlag == true {
 		devices, err := pcap.FindAllDevs()
 		if err != nil {
 			log.Fatal(err)
 		}
-		p.displayDevices(devices)
+		displayDevices(devices)
 		os.Exit(0)
 	}
-	if inputFlag == true && outputFlag == false {
-		p.openInputPcap()
+
+	if len(os.Args) < 1 {
+		showhelp()
+		os.Exit(0)
 	}
-	if outputFlag == true && inputFlag == false || outputFlag == false && inputFlag == false {
+
+	switch os.Args[1] {
+
+	case "sniff":
+		sniffCommand.Parse(os.Args[2:])
+		packetLimit = *snifflimit
+		return &packiffer{
+			interfaceName:   *sniffInterfaceName,
+			promiscuous:     *sniffPromiscuous,
+			filter:          *sniffFilter,
+			outputDirectory: *sniffoutputdirectory,
+			outputFileName:  *sniffoutputfilename,
+			device:          *device,
+			snapshotLen:     int32(*sniffsnapshotlength),
+			timeout:         time.Duration(*snifftimeout) * time.Second,
+			limit:           *snifflimit,
+			mode:            "sniff",
+			help:            *help}
+	case "transform":
+
+	case "inspect":
+
+	default:
+		showhelp()
+		os.Exit(0)
+	}
+	return nil
+}
+
+func (p *packiffer) pcap(mode string) {
+	if mode == "sniff" {
+		fmt.Printf("\nStarting Packiffer in sniffing mode\n")
 		p.openLivePcap()
 	}
-	if inputFlag == true && outputFlag == true {
+	if mode == "transform" {
 		p.openTransformPcap()
 	}
-}
-
-func (p *packiffer) openTransformPcap() {
-
-}
-
-func (p *packiffer) openLivePcap() {
-	p.handle, p.err = pcap.OpenLive(p.interfaceName, p.snapshotLen, p.promiscuous, p.timeout)
-	if p.err != nil {
-		log.Fatal(p.err)
-	}
-	defer p.handle.Close()
-	if filterFlag == true {
-		p.filterPacket()
-	}
-	packetCount = 0
-	var f *os.File
-	if outputFlag == true {
-		f, _ = os.Create(p.output + ".pcap")
-	} else {
-		f, _ = os.Create(p.interfaceName + ".pcap")
-	}
-	w := pcapgo.NewWriter(f)
-	w.WriteFileHeader(snapshotLen, layers.LinkTypeEthernet)
-	defer f.Close()
-	packets := gopacket.NewPacketSource(p.handle, p.handle.LinkType())
-	for packet := range packets.Packets() {
-		go p.dumpPacket(&packet, w)
+	if mode == "inspect" {
+		p.openInputPcap()
 	}
 }
 
-func (p *packiffer) filterPacket() {
-	p.err = p.handle.SetBPFFilter(p.filter)
-	if p.err != nil {
-		log.Fatal(p.err)
+func exists(path string) (bool, error) {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true, nil
 	}
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	return false, err
 }
 
-func (p *packiffer) openInputPcap() {
-	p.handle, p.err = pcap.OpenOffline(p.input)
-	if p.err != nil {
-		log.Fatal(p.err)
-	}
-	defer p.handle.Close()
-
-	packetSource := gopacket.NewPacketSource(p.handle, p.handle.LinkType())
-	for packet := range packetSource.Packets() {
-		go p.packetInfo(&packet)
-	}
-}
-
-func (p packiffer) displayDevices(devices []pcap.Interface) {
+func displayDevices(devices []pcap.Interface) {
 	fmt.Println("Devices found:")
 	fmt.Printf("\n")
 	for _, device := range devices {
@@ -314,6 +239,10 @@ func main() {
 
 	p := getFlagsValue()
 
+	if p == nil {
+		os.Exit(0)
+	}
+
 	checkFlagsPassed()
 
 	flag.Usage = func() {
@@ -325,7 +254,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	p.pcap()
+	p.pcap(p.mode)
 
 	os.Exit(0)
 }
