@@ -32,23 +32,26 @@ func (p *packiffer) handleui() {
 	// message := fyne.NewContainerWithLayout(layout.NewHBoxLayout(),
 	// 	layout.NewSpacer(), hello, layout.NewSpacer())
 
-	button := widget.NewButton("Start Sniffing ...", func() {
-		hello.SetText("Sniffing")
-	})
+	interfaceTextBox := widget.NewSelect(getInterfaceNames(), func(value string) {
 
-	interfaceTextBox := widget.NewEntry()
-	interfaceTextBox.SetPlaceHolder("Enter interface name ...")
+	})
+	interfaceTextBox.PlaceHolder = "Select interface ..."
 
 	filterTextBox := widget.NewEntry()
 	filterTextBox.SetPlaceHolder("Enter Filter ...")
 
+	button := widget.NewButton("Start Sniffing ...", func() {
+		hello.SetText("Sniffing")
+		interfaceTextBox.Selected.
+	})
+
 	spaceContainer := fyne.NewContainerWithLayout(layout.NewGridWrapLayout(fyne.NewSize(30, 1)),
 		widget.NewLabel(""))
 
-	combo := widget.NewSelect([]string{"libpcap", "pfring", "afpacket"}, func(value string) {
+	// combo := widget.NewSelect([]string{"libpcap", "pfring", "afpacket"}, func(value string) {
 
-	})
-	combo.PlaceHolder = "Select Engine ..."
+	// })
+	// combo.PlaceHolder = "Select Engine ..."
 
 	verticalspace := fyne.NewContainerWithLayout(layout.NewVBoxLayout(), layout.NewSpacer(), widget.NewLabel(" "), layout.NewSpacer())
 
@@ -58,7 +61,7 @@ func (p *packiffer) handleui() {
 		spaceContainer,
 		filterTextBox,
 		spaceContainer,
-		combo,
+		//combo,
 		spaceContainer,
 		button)
 
@@ -69,7 +72,9 @@ func (p *packiffer) handleui() {
 	tabs := widget.NewTabContainer(
 		widget.NewTabItem("Sniff", tabcontainer),
 		widget.NewTabItem("Transform", widget.NewLabel("Transform!")),
-		widget.NewTabItem("Inspect", widget.NewLabel("Inspect!")))
+		widget.NewTabItem("Inspect", widget.NewLabel("Inspect!")),
+		widget.NewTabItem("inject", widget.NewLabel("inject!")),
+		widget.NewTabItem("help", widget.NewLabel("help!")))
 
 	w.SetContent(fyne.NewContainerWithLayout(
 		layout.NewVBoxLayout(),

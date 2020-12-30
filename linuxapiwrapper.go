@@ -79,6 +79,17 @@ func getInterfaceList() {
 	}
 }
 
+func getInterfaceNames() []string {
+	var ilist []string
+	interfaceList, _ := net.Interfaces()
+	if interfaceList != nil {
+		for _, item := range interfaceList {
+			ilist = append(ilist, item.Name)
+		}
+	}
+	return ilist
+}
+
 func setPacketVersionV3(socketDescriptor int) (int, error) {
 	PacketVersion := 10 // PACKET_VERSION
 	PacketV3 := 2       // TPACKET_V3

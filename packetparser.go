@@ -3,7 +3,9 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/google/gopacket"
@@ -84,4 +86,10 @@ func (p *packiffer) packetInfo(packet *gopacket.Packet) {
 	if err := (*packet).ErrorLayer(); err != nil {
 		fmt.Println("Error decoding some part of the packet:", err)
 	}
+
+	fmt.Println("Press any key to inspect next packet")
+	reader := bufio.NewReader(os.Stdin)
+	text, _ := reader.ReadString('\n')
+	text = strings.Replace(text, "\n", "", -1)
+
 }

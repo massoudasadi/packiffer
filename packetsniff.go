@@ -15,7 +15,26 @@ import (
 )
 
 func (p *packiffer) openTransformPcap() {
-
+	p.handle, p.err = pcap.OpenOffline(p.input)
+	if p.err != nil {
+		log.Fatal(p.err)
+	}
+	defer p.handle.Close()
+	if transformFilterFlag == true {
+		p.filterPacket()
+	}
+	packetCount = 0
+	var f *os.File
+	var err error
+	p.createPcap(f, err)
+	w := pcapgo.NewWriter(f)
+	w.WriteFileHeader(snapshotLen, layers.LinkTypeEthernet)
+	defer f.Close()
+	go displayPacketCount()
+	packetSource := gopacket.NewPacketSource(p.handle, p.handle.LinkType())
+	for packet := range packetSource.Packets() {
+		go p.dumpPacket(&packet, w)
+	}
 }
 
 func (p *packiffer) openLivePcap() {
@@ -107,6 +126,6 @@ func (p *packiffer) openInputPcap() {
 
 	packetSource := gopacket.NewPacketSource(p.handle, p.handle.LinkType())
 	for packet := range packetSource.Packets() {
-		go p.packetInfo(&packet)
+		p.packetInfo(&packet)
 	}
 }

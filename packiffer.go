@@ -129,18 +129,18 @@ func getFlagsValue() *packiffer {
 	snifftimeout := sniffCommand.Int("t", 30, "limit sniffing timeout. Default is 30 seconds")
 	snifflimit := sniffCommand.Int("c", 1000, "Limit count of packets to sniff. Default is 1000")
 
-	// transformCommand := flag.NewFlagSet("transform", flag.ExitOnError)
-	// transformInterfaceName := transformCommand.String("i", "eth0", "Specify interface name. Default is eth0")
-	// transformFilter := transformCommand.String("f", "all", "Specify filter query. Default is all")
-	// transformInput := transformCommand.String("in", "", "Specify input pcap file")
-	// transformoutputdirectory := transformCommand.String("od", "packiffer", "Specify output directory. Default is packiffer directory")
-	// transformoutputfilename := transformCommand.String("of", "interface", "Specify output file name. Default is interface name")
-	// transformlimit := transformCommand.Int("c", 1000, "Limit count of packets to sniff. Default is 1000")
+	transformCommand := flag.NewFlagSet("transform", flag.ExitOnError)
+	transformInterfaceName := transformCommand.String("i", "eth0", "Specify interface name. Default is eth0")
+	transformFilter := transformCommand.String("f", "all", "Specify filter query. Default is all")
+	transformInput := transformCommand.String("in", "", "Specify input pcap file")
+	transformoutputdirectory := transformCommand.String("od", "packiffer", "Specify output directory. Default is packiffer directory")
+	transformoutputfilename := transformCommand.String("of", "interface", "Specify output file name. Default is interface name")
+	transformlimit := transformCommand.Int("c", 1000, "Limit count of packets to sniff. Default is 1000")
 
-	// inspectCommand := flag.NewFlagSet("inspect", flag.ExitOnError)
-	// inspectInput := inspectCommand.String("in", "", "Specify input pcap file")
-	// inspectFilter := inspectCommand.String("f", "all", "Specify filter query. Default is all")
-	// inspectlimit := inspectCommand.Int("c", 1000, "Limit count of packets to sniff. Default is 1000")
+	inspectCommand := flag.NewFlagSet("inspect", flag.ExitOnError)
+	inspectInput := inspectCommand.String("in", "", "Specify input pcap file")
+	inspectFilter := inspectCommand.String("f", "all", "Specify filter query. Default is all")
+	inspectlimit := inspectCommand.Int("c", 1000, "Limit count of packets to sniff. Default is 1000")
 
 	help := flag.Bool("h", false, "Specify help display. Default is false")
 	device := flag.Bool("d", true, "Specify devices display. Default is false")
@@ -184,9 +184,28 @@ func getFlagsValue() *packiffer {
 			mode:            "sniff",
 			help:            *help}
 	case "transform":
+		transformCommand.Parse(os.Args[2:])
+		packetLimit = *transformlimit
+		return &packiffer{
+			interfaceName:   *transformInterfaceName,
+			filter:          *transformFilter,
+			outputDirectory: *transformoutputdirectory,
+			outputFileName:  *transformoutputfilename,
+			device:          *device,
+			limit:           *transformlimit,
+			mode:            "transform",
+			input:           *transformInput,
+			help:            *help}
 
 	case "inspect":
-
+		inspectCommand.Parse(os.Args[2:])
+		return &packiffer{
+			filter: *inspectFilter,
+			device: *device,
+			limit:  *inspectlimit,
+			mode:   "inspect",
+			input:  *inspectInput,
+			help:   *help}
 	default:
 		showhelp()
 		os.Exit(0)
@@ -200,9 +219,11 @@ func (p *packiffer) pcap(mode string) {
 		p.openLivePcap()
 	}
 	if mode == "transform" {
+		fmt.Printf("\nStarting Packiffer in transform mode\n")
 		p.openTransformPcap()
 	}
 	if mode == "inspect" {
+		fmt.Printf("\nStarting Packiffer in inspect mode\n")
 		p.openInputPcap()
 	}
 }
