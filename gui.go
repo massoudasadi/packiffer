@@ -42,7 +42,6 @@ func (p *packiffer) handleui() {
 
 	button := widget.NewButton("Start Sniffing ...", func() {
 		hello.SetText("Sniffing")
-		interfaceTextBox.Selected.
 	})
 
 	spaceContainer := fyne.NewContainerWithLayout(layout.NewGridWrapLayout(fyne.NewSize(30, 1)),
