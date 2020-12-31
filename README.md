@@ -3,19 +3,28 @@
 # Packiffer
 Packiffer is a lightweight cross-platform packet sniffer/analyzer that let you sniff packets live from network interface or offline pcap files. you can also apply filters and set promiscuous mode on interface.
 
+<pre>
 Features:
-<p>-display list of network interfaces</p>
-<p>-sniff packets live from interface</p>
-<p>-set promiscuous mode on interface</p>
-<p>-apply filters to packets</p>
-<p>-transform selected packets from pcap file to another</p>
-<p>-inspect packets in terminal</p>
+    -display list of network interfaces
+    -sniff packets live from interface
+    -set promiscuous mode on interface
+    -apply filters to packets
+    -transform selected packets from pcap file to another
+    -inspect packets in terminal
+</pre>
 
-
+<pre>
 Modes:
-    <p>Sniff: sniff packets live from interface</p>
-    <p>Transform: snif packets from offline pcap</p>
-    <p>Inspect: inspect & analysis packets from offline pcap files</p>
+    Sniff: 
+        sniff packets live from interface
+
+    Transform: 
+        transform packets from offline pcap
+
+    Inspect: 
+        inspect & analysis packets from offline pcap files
+</pre>
+
 # Prerequisites For Binary
 <p>Libpcap v1.9.1</p>
 
