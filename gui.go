@@ -44,6 +44,10 @@ func (p *packiffer) handleui() {
 		hello.SetText("Sniffing")
 	})
 
+	checkbox := widget.NewCheck("Promiscuous Mode", func(x bool) {
+
+	})
+
 	spaceContainer := fyne.NewContainerWithLayout(layout.NewGridWrapLayout(fyne.NewSize(30, 1)),
 		widget.NewLabel(""))
 
@@ -57,6 +61,8 @@ func (p *packiffer) handleui() {
 	container := fyne.NewContainerWithLayout(layout.NewHBoxLayout(),
 		verticalspace,
 		interfaceTextBox,
+		spaceContainer,
+		checkbox,
 		spaceContainer,
 		filterTextBox,
 		spaceContainer,

@@ -130,7 +130,6 @@ func getFlagsValue() *packiffer {
 	snifflimit := sniffCommand.Int("c", 1000, "Limit count of packets to sniff. Default is 1000")
 
 	transformCommand := flag.NewFlagSet("transform", flag.ExitOnError)
-	transformInterfaceName := transformCommand.String("i", "eth0", "Specify interface name. Default is eth0")
 	transformFilter := transformCommand.String("f", "all", "Specify filter query. Default is all")
 	transformInput := transformCommand.String("in", "", "Specify input pcap file")
 	transformoutputdirectory := transformCommand.String("od", "packiffer", "Specify output directory. Default is packiffer directory")
@@ -187,7 +186,6 @@ func getFlagsValue() *packiffer {
 		transformCommand.Parse(os.Args[2:])
 		packetLimit = *transformlimit
 		return &packiffer{
-			interfaceName:   *transformInterfaceName,
 			filter:          *transformFilter,
 			outputDirectory: *transformoutputdirectory,
 			outputFileName:  *transformoutputfilename,
@@ -264,7 +262,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	p.handleui()
+	//p.handleui()
 
 	checkFlagsPassed()
 

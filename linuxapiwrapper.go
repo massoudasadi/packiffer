@@ -116,8 +116,8 @@ func getInterfaceIndex(interfaceName string) (int, error) {
 func fillLinkLayer(interfaceIndex int) syscall.RawSockaddrLinklayer {
 	return syscall.RawSockaddrLinklayer{
 		Family:   syscall.AF_PACKET,     // sll_family
-		Protocol: syscall.ETH_P_ALL,     // sll_ifindex
-		Ifindex:  int32(interfaceIndex)} // sll_protocol
+		Protocol: syscall.ETH_P_ALL,     // sll_protocol
+		Ifindex:  int32(interfaceIndex)} // sll_ifindex
 }
 
 func bindSocket(socketDescriptor int, linklayer syscall.RawSockaddrLinklayer) error {
