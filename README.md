@@ -102,7 +102,7 @@ transformonly udp packets from 'eth0.pcap' to 'eth0_udp.pcap' until Ctrl+C press
 
 inspect only tcp packets from pcap file
 ```
-./packiffer inspect -in /path/to/file.pcap
+./packiffer inspect -in /path/to/file.pcap -f tcp
 ```
 
 
