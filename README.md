@@ -104,5 +104,3 @@ inspect only tcp packets from pcap file
 ```
 ./packiffer inspect -in /path/to/file.pcap -f tcp
 ```
-
-
