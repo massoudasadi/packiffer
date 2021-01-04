@@ -142,16 +142,16 @@ func getFlagsValue() *packiffer {
 	inspectlimit := inspectCommand.Int("c", 1000, "Limit count of packets to sniff. Default is 1000")
 
 	help := flag.Bool("h", false, "Specify help display. Default is false")
-	device := flag.Bool("d", true, "Specify devices display. Default is false")
+	device := flag.Bool("d", false, "Specify devices display. Default is false")
 
 	flag.Parse()
 
-	if helpFlag == true {
+	if *help == true {
 		showhelp()
 		os.Exit(0)
 	}
 
-	if deviceFlag == true {
+	if *device == true {
 		devices, err := pcap.FindAllDevs()
 		if err != nil {
 			log.Fatal(err)
