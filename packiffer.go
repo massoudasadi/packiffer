@@ -262,8 +262,6 @@ func main() {
 		os.Exit(0)
 	}
 
-	//p.handleui()
-
 	checkFlagsPassed()
 
 	flag.Usage = func() {
