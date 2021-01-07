@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/google/gopacket"
@@ -26,15 +28,20 @@ func (p *packiffer) openTransformPcap() {
 	packetCount = 0
 	var f *os.File
 	var err error
-	p.createPcap(f, err)
+	p.createPcap(&f, err)
 	w := pcapgo.NewWriter(f)
 	w.WriteFileHeader(snapshotLen, layers.LinkTypeEthernet)
 	defer f.Close()
 	go displayPacketCount()
+	var wg sync.WaitGroup
+	var mu sync.Mutex
 	packetSource := gopacket.NewPacketSource(p.handle, p.handle.LinkType())
 	for packet := range packetSource.Packets() {
-		go p.dumpPacket(&packet, w)
+		atomic.AddInt64(&packetCount, 1)
+		wg.Add(1)
+		go p.dumpPacket(packet, w, &wg, &mu)
 	}
+	wg.Done()
 }
 
 func (p *packiffer) openLivePcap() {
@@ -47,18 +54,28 @@ func (p *packiffer) openLivePcap() {
 		p.filterPacket()
 	}
 	packetCount = 0
-	var f *os.File
+	var f *os.File = nil
 	var err error
-	p.createPcap(f, err)
+	p.createPcap(&f, err)
 	w := pcapgo.NewWriter(f)
-	w.WriteFileHeader(snapshotLen, layers.LinkTypeEthernet)
+	if err := w.WriteFileHeader(snapshotLen, layers.LinkTypeEthernet); err != nil {
+		fmt.Print("pcap.WriteFileHeader(): " + err.Error())
+	}
 	defer f.Close()
 	go displayPacketCount()
+	var wg sync.WaitGroup
+	var mu sync.Mutex
 	if snifflimitFlag == false {
 		packets := gopacket.NewPacketSource(p.handle, p.handle.LinkType())
 		for packet := range packets.Packets() {
-			go p.dumpPacket(&packet, w)
+			atomic.AddInt64(&packetCount, 1)
+			wg.Add(1)
+			go p.dumpPacket(packet, w, &wg, &mu)
+			if packetCount > 500 {
+				break
+			}
 		}
+		wg.Wait()
 	} else {
 		packets := gopacket.NewPacketSource(p.handle, p.handle.LinkType())
 		for packet := range packets.Packets() {
@@ -67,9 +84,9 @@ func (p *packiffer) openLivePcap() {
 	}
 }
 
-func (p *packiffer) createPcap(f *os.File, err error) {
+func (p *packiffer) createPcap(f **os.File, err error) {
 	if sniffoutputdirectoryFlag == true && sniffoutputfilenameFlag == true {
-		f, err = os.Create(p.outputDirectory + "/" + p.outputFileName + ".pcap")
+		*f, err = os.Create(p.outputDirectory + "/" + p.outputFileName + ".pcap")
 		if err != nil {
 			fmt.Println("error in creating pcap file")
 			os.Exit(0)
@@ -77,7 +94,7 @@ func (p *packiffer) createPcap(f *os.File, err error) {
 		fmt.Println("packets dump in: " + p.outputDirectory + "/" + p.outputFileName + ".pcap")
 	}
 	if sniffoutputdirectoryFlag == false && sniffoutputfilenameFlag == true {
-		f, err = os.Create(p.outputFileName + ".pcap")
+		*f, err = os.Create(p.outputFileName + ".pcap")
 		if err != nil {
 			fmt.Println("error in creating pcap file")
 			os.Exit(0)
@@ -85,7 +102,7 @@ func (p *packiffer) createPcap(f *os.File, err error) {
 		fmt.Println("packets dump in: " + p.outputFileName + ".pcap")
 	}
 	if sniffoutputdirectoryFlag == true && sniffoutputfilenameFlag == false {
-		f, err = os.Create(p.outputDirectory + "/" + p.interfaceName + ".pcap")
+		*f, err = os.Create(p.outputDirectory + "/" + p.interfaceName + ".pcap")
 		if err != nil {
 			fmt.Println("error in creating pcap file")
 			os.Exit(0)
@@ -93,12 +110,12 @@ func (p *packiffer) createPcap(f *os.File, err error) {
 		fmt.Println("packets dump in: " + p.outputDirectory + "/" + p.interfaceName + ".pcap")
 	}
 	if sniffoutputdirectoryFlag == false && sniffoutputfilenameFlag == false {
-		f, err = os.Create(p.interfaceName + ".pcap")
+		*f, err = os.Create(p.interfaceName + ".pcap")
 		if err != nil {
 			fmt.Println("error in creating pcap file")
 			os.Exit(0)
 		}
-		fmt.Println("packets dumpp in: " + p.interfaceName + ".pcap")
+		fmt.Println("packets dump in: " + p.interfaceName + ".pcap")
 	}
 }
 
