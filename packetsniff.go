@@ -71,16 +71,19 @@ func (p *packiffer) openLivePcap() {
 			atomic.AddInt64(&packetCount, 1)
 			wg.Add(1)
 			go p.dumpPacket(packet, w, &wg, &mu)
-			if packetCount > 500 {
-				break
-			}
 		}
 		wg.Wait()
 	} else {
 		packets := gopacket.NewPacketSource(p.handle, p.handle.LinkType())
 		for packet := range packets.Packets() {
-			go p.dumpPacketWithLimit(&packet, w)
+			atomic.AddInt64(&packetCount, 1)
+			wg.Add(1)
+			go p.dumpPacket(packet, w, &wg, &mu)
+			if packetCount > int64(p.limit) {
+				break
+			}
 		}
+		wg.Wait()
 	}
 }
 

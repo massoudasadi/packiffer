@@ -71,9 +71,9 @@ var displayPackets bool
 var displayChart bool
 var packetLimit int
 
-func isFlagPassed(name string) bool {
+func isFlagPassed(name string, FlagSet *flag.FlagSet) bool {
 	found := false
-	flag.Visit(func(f *flag.Flag) {
+	FlagSet.Visit(func(f *flag.Flag) {
 		if f.Name == name {
 			found = true
 		}
@@ -106,15 +106,29 @@ func showhelp() {
 
 }
 
-func checkFlagsPassed() {
-	sniffInterfaceNameFlag = isFlagPassed("i")
-	sniffPromiscuousFlag = isFlagPassed("p")
-	sniffFilterFlag = isFlagPassed("f")
-	sniffoutputdirectoryFlag = isFlagPassed("od")
-	sniffoutputfilenameFlag = isFlagPassed("of")
-	sniffsnapshotlengthFlag = isFlagPassed("sl")
-	snifftimeoutFlag = isFlagPassed("t")
-	snifflimitFlag = isFlagPassed("c")
+func checkSniffFlagsPassed(flag *flag.FlagSet) {
+	sniffInterfaceNameFlag = isFlagPassed("i", flag)
+	sniffPromiscuousFlag = isFlagPassed("p", flag)
+	sniffFilterFlag = isFlagPassed("f", flag)
+	sniffoutputdirectoryFlag = isFlagPassed("od", flag)
+	sniffoutputfilenameFlag = isFlagPassed("of", flag)
+	sniffsnapshotlengthFlag = isFlagPassed("sl", flag)
+	snifftimeoutFlag = isFlagPassed("t", flag)
+	snifflimitFlag = isFlagPassed("c", flag)
+}
+
+func checkTransformFlagsPassed(flag *flag.FlagSet) {
+	transformFilterFlag = isFlagPassed("f", flag)
+	transformInputFlag = isFlagPassed("in", flag)
+	transformoutputdirectoryFlag = isFlagPassed("od", flag)
+	transformoutputfilenameFlag = isFlagPassed("of", flag)
+	transformlimitFlag = isFlagPassed("c", flag)
+}
+
+func checkInspectFlagsPassed(flag *flag.FlagSet) {
+	inspectInputFlag = isFlagPassed("in", flag)
+	inspectFilterFlag = isFlagPassed("f", flag)
+	inspectlimitFlag = isFlagPassed("c", flag)
 }
 
 func getFlagsValue() *packiffer {
@@ -170,6 +184,7 @@ func getFlagsValue() *packiffer {
 	case "sniff":
 		sniffCommand.Parse(os.Args[2:])
 		packetLimit = *snifflimit
+		checkSniffFlagsPassed(sniffCommand)
 		return &packiffer{
 			interfaceName:   *sniffInterfaceName,
 			promiscuous:     *sniffPromiscuous,
@@ -185,6 +200,7 @@ func getFlagsValue() *packiffer {
 	case "transform":
 		transformCommand.Parse(os.Args[2:])
 		packetLimit = *transformlimit
+		checkTransformFlagsPassed(transformCommand)
 		return &packiffer{
 			filter:          *transformFilter,
 			outputDirectory: *transformoutputdirectory,
@@ -197,6 +213,7 @@ func getFlagsValue() *packiffer {
 
 	case "inspect":
 		inspectCommand.Parse(os.Args[2:])
+		checkInspectFlagsPassed(inspectCommand)
 		return &packiffer{
 			filter: *inspectFilter,
 			device: *device,
@@ -261,8 +278,6 @@ func main() {
 	if p == nil {
 		os.Exit(0)
 	}
-
-	checkFlagsPassed()
 
 	flag.Usage = func() {
 		showhelp()
