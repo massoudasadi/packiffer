@@ -148,12 +148,12 @@ func getFlagsValue() *packiffer {
 	transformInput := transformCommand.String("in", "", "Specify input pcap file")
 	transformoutputdirectory := transformCommand.String("od", "packiffer", "Specify output directory. Default is packiffer directory")
 	transformoutputfilename := transformCommand.String("of", "interface", "Specify output file name. Default is interface name")
-	transformlimit := transformCommand.Int("c", 1000, "Limit count of packets to sniff. Default is 1000")
+	transformlimit := transformCommand.Int("c", 10000, "Limit count of packets to sniff. Default is 10000")
 
 	inspectCommand := flag.NewFlagSet("inspect", flag.ExitOnError)
 	inspectInput := inspectCommand.String("in", "", "Specify input pcap file")
 	inspectFilter := inspectCommand.String("f", "all", "Specify filter query. Default is all")
-	inspectlimit := inspectCommand.Int("c", 1000, "Limit count of packets to sniff. Default is 1000")
+	inspectlimit := inspectCommand.Int("c", 10000, "Limit count of packets to sniff. Default is 10000")
 
 	help := flag.Bool("h", false, "Specify help display. Default is false")
 	device := flag.Bool("d", false, "Specify devices display. Default is false")

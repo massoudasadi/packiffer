@@ -71,6 +71,9 @@ func (p *packiffer) openLivePcap() {
 			atomic.AddInt64(&packetCount, 1)
 			wg.Add(1)
 			go p.dumpPacket(packet, w, &wg, &mu)
+			if packetCount > 10000 {
+				break
+			}
 		}
 		wg.Wait()
 	} else {
