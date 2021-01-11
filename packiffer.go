@@ -141,7 +141,7 @@ func getFlagsValue() *packiffer {
 	sniffoutputfilename := sniffCommand.String("of", "interface", "Specify output file name. Default is interface name")
 	sniffsnapshotlength := sniffCommand.Int("sl", 1024, "Specify Snapshot Lenght. Default is 2014")
 	snifftimeout := sniffCommand.Int("t", 30, "limit sniffing timeout. Default is 30 seconds")
-	snifflimit := sniffCommand.Int("c", 1000, "Limit count of packets to sniff. Default is 1000")
+	snifflimit := sniffCommand.Int("c", 10000, "Limit count of packets to sniff. Default is 10000")
 
 	transformCommand := flag.NewFlagSet("transform", flag.ExitOnError)
 	transformFilter := transformCommand.String("f", "all", "Specify filter query. Default is all")
