@@ -13,6 +13,12 @@ import (
 )
 
 func (p *packiffer) packetInfo(packet *gopacket.Packet) {
+
+	fmt.Println("All packet layers:")
+	for _, layer := range (*packet).Layers() {
+		fmt.Println("- ", layer.LayerType())
+	}
+
 	ethernetLayer := (*packet).Layer(layers.LayerTypeEthernet)
 	if ethernetLayer != nil {
 		fmt.Println("Ethernet layer detected.")
@@ -63,11 +69,6 @@ func (p *packiffer) packetInfo(packet *gopacket.Packet) {
 		fmt.Printf("From port %d to %d\n", udp.SrcPort, udp.DstPort)
 		fmt.Println("Checksum number: ", udp.Checksum)
 		fmt.Println()
-	}
-
-	fmt.Println("All packet layers:")
-	for _, layer := range (*packet).Layers() {
-		fmt.Println("- ", layer.LayerType())
 	}
 
 	applicationLayer := (*packet).ApplicationLayer()
