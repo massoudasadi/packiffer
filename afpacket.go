@@ -88,10 +88,10 @@ package main
 // unsigned int framesize = 1 << 11;
 // unsigned int block_number = 64;
 //
-// static void signal_handler()
-// {
-//     sigint = 1;
-// }
+//// static void signal_handler()
+//// {
+////     sigint = 1;
+//// }
 //
 // void set_packet_version(int socket_descriptor){
 //     int packet_version = TPACKET_V3;

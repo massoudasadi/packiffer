@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/google/gopacket"
 	"github.com/google/gopacket/pcap"
 )
 
@@ -33,6 +34,10 @@ type packiffer struct {
 	timeout          time.Duration
 	handle           *pcap.Handle
 	mode             string
+	Raw              bool
+	Constructed      bool
+	buffer           gopacket.SerializeBuffer
+	options          gopacket.SerializeOptions
 }
 
 var sniffInterfaceNameFlag bool
@@ -54,6 +59,10 @@ var transformlimitFlag bool
 var inspectInputFlag bool
 var inspectFilterFlag bool
 var inspectlimitFlag bool
+
+var injectInterface bool
+var injectRaw bool
+var injectConstruct bool
 
 var helpFlag bool
 var deviceFlag bool
@@ -131,6 +140,12 @@ func checkInspectFlagsPassed(flag *flag.FlagSet) {
 	inspectlimitFlag = isFlagPassed("c", flag)
 }
 
+func checkInjectFlagsPassed(flag *flag.FlagSet) {
+	injectInterface = isFlagPassed("i", flag)
+	injectRaw = isFlagPassed("in", flag)
+	injectConstruct = isFlagPassed("co", flag)
+}
+
 func getFlagsValue() *packiffer {
 
 	sniffCommand := flag.NewFlagSet("sniff", flag.ExitOnError)
@@ -154,6 +169,11 @@ func getFlagsValue() *packiffer {
 	inspectInput := inspectCommand.String("in", "", "Specify input pcap file")
 	inspectFilter := inspectCommand.String("f", "all", "Specify filter query. Default is all")
 	inspectlimit := inspectCommand.Int("c", 10000, "Limit count of packets to sniff. Default is 10000")
+
+	injectCommand := flag.NewFlagSet("inject", flag.ExitOnError)
+	injectInterface := injectCommand.String("i", "eth0", "Specify interface name. Default is eth0")
+	injectRaw := injectCommand.Bool("in", false, "Specify Raw Packet Inject. Default is False")
+	injectConstruct := injectCommand.Bool("co", false, "Specify Constructed Packet Inject. Default is False")
 
 	help := flag.Bool("h", false, "Specify help display. Default is false")
 	device := flag.Bool("d", false, "Specify devices display. Default is false")
@@ -221,6 +241,18 @@ func getFlagsValue() *packiffer {
 			mode:   "inspect",
 			input:  *inspectInput,
 			help:   *help}
+
+	case "inject":
+		injectCommand.Parse(os.Args[2:])
+		checkInjectFlagsPassed(injectCommand)
+		return &packiffer{
+			interfaceName: *injectInterface,
+			Raw:           *injectRaw,
+			Constructed:   *injectConstruct,
+			device:        *device,
+			mode:          "inject",
+			help:          *help}
+
 	default:
 		showhelp()
 		os.Exit(0)
@@ -240,6 +272,10 @@ func (p *packiffer) pcap(mode string) {
 	if mode == "inspect" {
 		fmt.Printf("\nStarting Packiffer in inspect mode\n")
 		p.openInputPcap()
+	}
+	if mode == "inject" {
+		fmt.Printf("\nStarting Packiffer in inject mode\n")
+		p.injectPacket()
 	}
 }
 
