@@ -27,13 +27,13 @@ Modes:
 
 # Prerequisites For Binary
 <p>Libpcap v1.9.1</p>
-<p>libnetfilter_queue</p> (Linux)
+<p>libnetfilter_queue (Linux)</p>
 
 # Prerequisites For Source
 <p>Golang v1.15.2</p>
 <p>GoPacket v1.1.18</p>
 <p>Libpcap v1.9.1</p>
-<p>libnetfilter_queue</p> (Linux)
+<p>libnetfilter_queue (Linux)</p>
 
 # How to get Packiffer
 Checkout packiffer git repo using git clone
