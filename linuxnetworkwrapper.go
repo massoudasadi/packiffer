@@ -6,10 +6,8 @@ package main
 #cgo pkg-config: libnetfilter_queue
 #cgo CFLAGS: -Wall -I/usr/include
 #cgo LDFLAGS: -L/usr/lib64/
-
 #ifndef _NETFILTER_H
 #define _NETFILTER_H
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -21,15 +19,12 @@ package main
 #include <linux/socket.h>
 #include <linux/netfilter.h>
 #include <libnetfilter_queue/libnetfilter_queue.h>
-
 typedef struct {
     uint verdict;
     uint length;
     unsigned char *data;
 } verdictContainer;
-
 extern void go_callback(int id, unsigned char* data, int len, u_int32_t idx, verdictContainer *vc);
-
 static int nf_callback(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *nfa, void *cb_func){
     uint32_t id = -1;
     struct nfqnl_msg_packet_hdr *ph = NULL;
@@ -37,51 +32,45 @@ static int nf_callback(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct n
     int ret = 0;
     u_int32_t idx;
     verdictContainer vc;
-
     ph = nfq_get_msg_packet_hdr(nfa);
     id = ntohl(ph->packet_id);
-
     ret = nfq_get_payload(nfa, &buffer);
     idx = (uint32_t)((uintptr_t)cb_func);
-
     go_callback(id, buffer, ret, idx, &vc);
-
     return nfq_set_verdict(qh, id, vc.verdict, vc.length, vc.data);
 }
-
 static inline struct nfq_q_handle* CreateQueue(struct nfq_handle *h, u_int16_t queue, u_int32_t idx)
 {
     return nfq_create_queue(h, queue, &nf_callback, (void*)((uintptr_t)idx));
 }
-
 static inline int Run(struct nfq_handle *h, int fd)
 {
     char buf[4096] __attribute__ ((aligned));
     int rv;
-
     int opt = 1;
     setsockopt(fd, SOL_NETLINK, NETLINK_NO_ENOBUFS, &opt, sizeof(int));
-
     while ((rv = recv(fd, buf, sizeof(buf), 0)) && rv >= 0) {
         nfq_handle_packet(h, buf, rv);
     }
-
     return errno;
 }
-
 #endif
 */
 import "C"
 
 import (
+	"errors"
 	"fmt"
+	"net"
 	"os"
 	"sync"
+	"syscall"
 	"time"
 	"unsafe"
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
+	"golang.org/x/sys/unix"
 )
 
 // forked from
@@ -110,24 +99,17 @@ The libnetfilter_queue library is part of the http://netfilter.org/projects/libn
 /*
 install libnetfilter-queue-dev:
 sudo apt-get install libnetfilter-queue-dev
-
 usage example:
-
 use IPTables to direct all outgoing Ping/ICMP requests to the queue 0:
 iptables -A OUTPUT -p icmp -j NFQUEUE --queue-num 0
-
 You can then use go-netfilter-queue to inspect the packets:
-
 package main
-
 import (
         "fmt"
         "os"
 )
-
 func main() {
         var err error
-
         nfq, err := newNFQueue(0, 100, nfDefaultPacketSize)
         if err != nil {
                 fmt.Println(err)
@@ -135,7 +117,6 @@ func main() {
         }
         defer nfq.close()
         packets := nfq.getPackets()
-
         for true {
                 select {
                 case p := <-packets:
@@ -144,13 +125,10 @@ func main() {
                 }
         }
 }
-
 To inject a new or modified packet in the place of the original packet, use:
 p.setVerdict(nfAccept, byte_slice)
-
 Instead of:
 p.setVerdict(nfAccept)
-
 To undo the IPTables redirect. Run:
 iptables -D OUTPUT -p icmp -j NFQUEUE --queue-num 0
 */
@@ -333,4 +311,83 @@ func go_callback(queueID C.int, data *C.uchar, length C.int, idx uint32, vc *ver
 		(*vc).data = nil
 		(*vc).length = 0
 	}
+}
+
+func createAfSocket() (int, error) {
+	psocket, perror := syscall.Socket(syscall.AF_PACKET, syscall.SOCK_RAW, syscall.ETH_P_ALL)
+	defer syscall.Close(psocket)
+	if perror != nil {
+		fmt.Println("Error: " + perror.Error())
+		return psocket, perror
+	}
+	return psocket, perror
+}
+
+func getInterfaceList() {
+	interfaceList, _ := net.Interfaces()
+	if interfaceList != nil {
+		for _, item := range interfaceList {
+			fmt.Println(item.Name)
+		}
+	}
+}
+
+func getInterfaceNames() []string {
+	var ilist []string
+	interfaceList, _ := net.Interfaces()
+	if interfaceList != nil {
+		for _, item := range interfaceList {
+			ilist = append(ilist, item.Name)
+		}
+	}
+	return ilist
+}
+
+func setPacketVersionV3(socketDescriptor int) (int, error) {
+	PacketVersion := 10 // PACKET_VERSION
+	PacketV3 := 2       // TPACKET_V3
+	psetsockopt := syscall.SetsockoptInt(socketDescriptor, syscall.SOL_PACKET, PacketVersion, PacketV3)
+	if psetsockopt != nil {
+		return 1, psetsockopt
+	}
+	return -1, psetsockopt
+}
+
+func getInterfaceIndex(interfaceName string) (int, error) {
+	interfaceList, perror := net.Interfaces()
+	if interfaceList != nil {
+		for _, item := range interfaceList {
+			if item.Name == interfaceName {
+				return item.Index, nil
+			}
+		}
+		return -1, errors.New("interface not found")
+	}
+	return -1, perror
+}
+
+func fillLinkLayer(interfaceIndex int) syscall.RawSockaddrLinklayer {
+	return syscall.RawSockaddrLinklayer{
+		Family:   syscall.AF_PACKET,     // sll_family
+		Protocol: syscall.ETH_P_ALL,     // sll_protocol
+		Ifindex:  int32(interfaceIndex)} // sll_ifindex
+}
+
+func bindSocket(socketDescriptor int, linklayer syscall.RawSockaddrLinklayer) error {
+	_, _, perror := syscall.Syscall(syscall.SYS_BIND, uintptr(socketDescriptor),
+		uintptr(unsafe.Pointer(&linklayer)), unsafe.Sizeof(linklayer))
+	if perror > 0 {
+		return errors.New("can not bind socket")
+	}
+	return nil
+}
+
+func createXdpSocket() (int, error) {
+	psocket, perror := syscall.Socket(unix.AF_XDP, syscall.SOCK_RAW, 0)
+	defer syscall.Close(psocket)
+	if perror != nil {
+		fmt.Println("Error: " + perror.Error())
+		return psocket, perror
+	}
+	return psocket, perror
 }
