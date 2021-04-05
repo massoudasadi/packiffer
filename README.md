@@ -1,7 +1,7 @@
 <img src="./packiffer.png">
 
 # Packiffer
-Packiffer is a lightweight cross-platform packet sniffer/analyzer that let you sniff packets live from network interface or offline pcap files. you can also apply filters and set promiscuous mode on interface.
+Packiffer is a lightweight cross-platform networking toolkit that let you sniff/analyse/inject/filter packets.
 
 <pre>
 Features:
@@ -11,6 +11,8 @@ Features:
     -apply filters to packets
     -transform selected packets from pcap file to another
     -inspect packets in terminal
+    -inject packets into network
+    -filter packets with specified destination ip
 </pre>
 
 <pre>
@@ -23,15 +25,24 @@ Modes:
 
     Inspect: 
         inspect & analysis packets from offline pcap files
+
+    Inject: 
+        Inject Raw & Constructed Packets
+
+    Filter:
+        Drop or Accept Packets
 </pre>
 
 # Prerequisites For Binary
 <p>Libpcap v1.9.1</p>
+<p>Clang/LLVM (Only on Linux for eBPF packet filtering)</p>
 
 # Prerequisites For Source
-<p>Golang v1.15.2</p>
-<p>GoPacket v1.1.18</p>
+<p>Golang v1.16</p>
+<p>GoPacket v1.1.19</p>
+<p>Go eBPF</p>
 <p>Libpcap v1.9.1</p>
+<p>Clang/LLVM (Only on Linux for eBPF XDP packet filtering)</p>
 
 # How to get Packiffer
 Checkout packiffer git repo using git clone
@@ -44,6 +55,8 @@ cd packiffer
 
 Sniff mode:
 ```
+make build_go 
+
 ./packiffer sniff <parameters>
 
 ("i", "Specify interface name. Default is eth0")
@@ -58,6 +71,8 @@ Sniff mode:
 
 transform mode:
 ```
+make build_go 
+
 ./packiffer transform <parameters>
 
 ("f", "Specify filter query. Default is all")
@@ -69,11 +84,36 @@ transform mode:
 
 inspect mode:
 ```
+make build_go 
+
 ./packiffer inspect <parameters>
 
 ("in", "Specify input pcap file")
 ("f", "Specify filter query. Default is all")
 ("c", "Limit count of packets to sniff. Default is 1000")
+```
+
+inject mode:
+```
+make build_go 
+
+./packiffer inject <parameters>
+
+("i", "Specify interface name. Default is eth0")
+("ir", "Specify Raw Packet Inject. Default is false")
+("ic", "Specify Constructed Packet Inject. Default is False")
+("f", "Specify Path to packet file. Default is inject.txt")
+```
+
+firewall mode:
+```
+make build_bpf
+make build_go 
+
+./packiffer firewall <parameters>
+
+("i", "Specify interface name. Default is eth0")
+("f", "Specify Path to firewall file. Default is firewall.txt")
 ```
 
 default mode:
@@ -103,4 +143,14 @@ transformonly udp packets from 'eth0.pcap' to 'eth0_udp.pcap' until Ctrl+C press
 inspect only tcp packets from pcap file
 ```
 ./packiffer inspect -in /path/to/file.pcap -f tcp
+```
+
+inject constructed tcp packets from InjectConstructed.json
+```
+./packiffer inject -i eth0 -ic -f /path/to/file.json
+```
+
+filter packets from ips inside firewall.txt
+```
+./packiffer firewall -i eth0 -f /path/to/file.txt
 ```

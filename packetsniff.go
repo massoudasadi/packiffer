@@ -22,13 +22,12 @@ func (p *packiffer) openTransformPcap() {
 		log.Fatal(p.err)
 	}
 	defer p.handle.Close()
-	if transformFilterFlag == true {
+	if transformFilterFlag {
 		p.filterPacket()
 	}
 	packetCount = 0
 	var f *os.File = nil
-	var err error
-	p.createTransformPcap(&f, err)
+	p.createTransformPcap(&f)
 	w := pcapgo.NewWriter(f)
 	w.WriteFileHeader(snapshotLen, layers.LinkTypeEthernet)
 	defer f.Close()
@@ -52,13 +51,12 @@ func (p *packiffer) openLivePcap() {
 		log.Fatal(p.err)
 	}
 	defer p.handle.Close()
-	if sniffFilterFlag == true {
+	if sniffFilterFlag {
 		p.filterPacket()
 	}
 	packetCount = 0
 	var f *os.File = nil
-	var err error
-	p.createSniffPcap(&f, err)
+	p.createSniffPcap(&f)
 	w := pcapgo.NewWriter(f)
 	if err := w.WriteFileHeader(snapshotLen, layers.LinkTypeEthernet); err != nil {
 		fmt.Print("pcap.WriteFileHeader(): " + err.Error())
@@ -67,7 +65,7 @@ func (p *packiffer) openLivePcap() {
 	go displayPacketCount()
 	var wg sync.WaitGroup
 	var mu sync.Mutex
-	if snifflimitFlag == false {
+	if snifflimitFlag {
 		packets := gopacket.NewPacketSource(p.handle, p.handle.LinkType())
 		for packet := range packets.Packets() {
 			atomic.AddInt64(&packetCount, 1)
@@ -92,8 +90,9 @@ func (p *packiffer) openLivePcap() {
 	}
 }
 
-func (p *packiffer) createSniffPcap(f **os.File, err error) {
-	if sniffoutputdirectoryFlag == true && sniffoutputfilenameFlag == true {
+func (p *packiffer) createSniffPcap(f **os.File) {
+	var err error
+	if sniffoutputdirectoryFlag && sniffoutputfilenameFlag {
 		*f, err = os.Create(p.outputDirectory + "/" + p.outputFileName + ".pcap")
 		if err != nil {
 			fmt.Println("error in creating pcap file")
@@ -101,7 +100,7 @@ func (p *packiffer) createSniffPcap(f **os.File, err error) {
 		}
 		fmt.Println("packets dump in: " + p.outputDirectory + "/" + p.outputFileName + ".pcap")
 	}
-	if sniffoutputdirectoryFlag == false && sniffoutputfilenameFlag == true {
+	if !sniffoutputdirectoryFlag && sniffoutputfilenameFlag {
 		*f, err = os.Create(p.outputFileName + ".pcap")
 		if err != nil {
 			fmt.Println("error in creating pcap file")
@@ -109,7 +108,7 @@ func (p *packiffer) createSniffPcap(f **os.File, err error) {
 		}
 		fmt.Println("packets dump in: " + p.outputFileName + ".pcap")
 	}
-	if sniffoutputdirectoryFlag == true && sniffoutputfilenameFlag == false {
+	if sniffoutputdirectoryFlag && !sniffoutputfilenameFlag {
 		*f, err = os.Create(p.outputDirectory + "/" + p.interfaceName + ".pcap")
 		if err != nil {
 			fmt.Println("error in creating pcap file")
@@ -117,7 +116,7 @@ func (p *packiffer) createSniffPcap(f **os.File, err error) {
 		}
 		fmt.Println("packets dump in: " + p.outputDirectory + "/" + p.interfaceName + ".pcap")
 	}
-	if sniffoutputdirectoryFlag == false && sniffoutputfilenameFlag == false {
+	if !sniffoutputdirectoryFlag && !sniffoutputfilenameFlag {
 		*f, err = os.Create(p.interfaceName + ".pcap")
 		if err != nil {
 			fmt.Println("error in creating pcap file")
@@ -127,8 +126,9 @@ func (p *packiffer) createSniffPcap(f **os.File, err error) {
 	}
 }
 
-func (p *packiffer) createTransformPcap(f **os.File, err error) {
-	if transformoutputdirectoryFlag == true && transformoutputfilenameFlag == true {
+func (p *packiffer) createTransformPcap(f **os.File) {
+	var err error
+	if transformoutputdirectoryFlag && transformoutputfilenameFlag {
 		*f, err = os.Create(p.outputDirectory + "/" + p.outputFileName + ".pcap")
 		if err != nil {
 			fmt.Println("error in creating pcap file")
@@ -136,7 +136,7 @@ func (p *packiffer) createTransformPcap(f **os.File, err error) {
 		}
 		fmt.Println("packets dump in: " + p.outputDirectory + "/" + p.outputFileName + ".pcap")
 	}
-	if transformoutputdirectoryFlag == false && transformoutputfilenameFlag == true {
+	if !transformoutputdirectoryFlag && transformoutputfilenameFlag {
 		*f, err = os.Create(p.outputFileName + ".pcap")
 		if err != nil {
 			fmt.Println("error in creating pcap file")
@@ -144,7 +144,7 @@ func (p *packiffer) createTransformPcap(f **os.File, err error) {
 		}
 		fmt.Println("packets dump in: " + p.outputFileName + ".pcap")
 	}
-	if transformoutputdirectoryFlag == true && transformoutputfilenameFlag == false {
+	if transformoutputdirectoryFlag && !transformoutputfilenameFlag {
 		*f, err = os.Create(p.outputDirectory + "/" + p.interfaceName + ".pcap")
 		if err != nil {
 			fmt.Println("error in creating pcap file")
@@ -152,7 +152,7 @@ func (p *packiffer) createTransformPcap(f **os.File, err error) {
 		}
 		fmt.Println("packets dump in: " + p.outputDirectory + "/" + p.interfaceName + ".pcap")
 	}
-	if transformoutputdirectoryFlag == false && transformoutputfilenameFlag == false {
+	if !transformoutputdirectoryFlag && !transformoutputfilenameFlag {
 		*f, err = os.Create(p.interfaceName + ".pcap")
 		if err != nil {
 			fmt.Println("error in creating pcap file")
@@ -164,7 +164,7 @@ func (p *packiffer) createTransformPcap(f **os.File, err error) {
 
 func displayPacketCount() {
 	ticker := time.Tick(time.Second)
-	for true {
+	for {
 		<-ticker
 		fmt.Printf("\033[2K\r%s%d", "packets sniffed: ", packetCount)
 	}

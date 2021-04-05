@@ -1,0 +1,15 @@
+{
+    "ethernetLayer" : {
+        "SrcMAC" : "FF-AA-FA-AA-FF-AA",
+        "DstMAC" : "BD-BD-BD-BD-BD-BD"
+    },
+    "ipLayer" : {
+        "SrcIP" : "127.0.0.1",
+        "DstIP" : "8.8.8.8"
+    },
+    "tcpLayer" : {
+        "SrcPort" : 4321,
+        "DstPort" : 80
+    },
+    "payload" : "Hello World"
+}

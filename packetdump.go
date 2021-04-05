@@ -1,4 +1,4 @@
-// +build linux windows darwin freebsd netbsd openbsd
+// +build linux
 
 package main
 

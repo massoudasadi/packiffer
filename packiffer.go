@@ -36,6 +36,7 @@ type packiffer struct {
 	mode             string
 	Raw              bool
 	Constructed      bool
+	File             string
 	buffer           gopacket.SerializeBuffer
 	options          gopacket.SerializeOptions
 }
@@ -63,6 +64,10 @@ var inspectlimitFlag bool
 var injectInterface bool
 var injectRaw bool
 var injectConstruct bool
+var injectFile bool
+
+var firewallInterface bool
+var firewallFile bool
 
 var helpFlag bool
 var deviceFlag bool
@@ -142,8 +147,14 @@ func checkInspectFlagsPassed(flag *flag.FlagSet) {
 
 func checkInjectFlagsPassed(flag *flag.FlagSet) {
 	injectInterface = isFlagPassed("i", flag)
-	injectRaw = isFlagPassed("in", flag)
-	injectConstruct = isFlagPassed("co", flag)
+	injectRaw = isFlagPassed("ir", flag)
+	injectConstruct = isFlagPassed("ic", flag)
+	injectFile = isFlagPassed("f", flag)
+}
+
+func checkFirewallFlagsPassed(flag *flag.FlagSet) {
+	firewallInterface = isFlagPassed("i", flag)
+	firewallFile = isFlagPassed("f", flag)
 }
 
 func getFlagsValue() *packiffer {
@@ -172,20 +183,25 @@ func getFlagsValue() *packiffer {
 
 	injectCommand := flag.NewFlagSet("inject", flag.ExitOnError)
 	injectInterface := injectCommand.String("i", "eth0", "Specify interface name. Default is eth0")
-	injectRaw := injectCommand.Bool("in", false, "Specify Raw Packet Inject. Default is False")
-	injectConstruct := injectCommand.Bool("co", false, "Specify Constructed Packet Inject. Default is False")
+	injectRaw := injectCommand.Bool("ir", false, "Specify Raw Packet Inject. Default is false")
+	injectConstruct := injectCommand.Bool("ic", false, "Specify Constructed Packet Inject. Default is False")
+	injectFile := injectCommand.String("f", "inject.txt", "Specify Path to packet file. Default is inject.txt")
+
+	firewallCommand := flag.NewFlagSet("firewall", flag.ExitOnError)
+	fireWallInterface := firewallCommand.String("i", "eth0", "Specify interface name. Default is eth0")
+	fireWallFile := firewallCommand.String("f", "firewall.txt", "Specify Path to firewall file. Default is firewall.txt")
 
 	help := flag.Bool("h", false, "Specify help display. Default is false")
 	device := flag.Bool("d", false, "Specify devices display. Default is false")
 
 	flag.Parse()
 
-	if *help == true {
+	if *help {
 		showhelp()
 		os.Exit(0)
 	}
 
-	if *device == true {
+	if *device {
 		devices, err := pcap.FindAllDevs()
 		if err != nil {
 			log.Fatal(err)
@@ -249,10 +265,20 @@ func getFlagsValue() *packiffer {
 			interfaceName: *injectInterface,
 			Raw:           *injectRaw,
 			Constructed:   *injectConstruct,
+			File:          *injectFile,
 			device:        *device,
 			mode:          "inject",
 			help:          *help}
 
+	case "firewall":
+		injectCommand.Parse(os.Args[2:])
+		checkFirewallFlagsPassed(firewallCommand)
+		return &packiffer{
+			interfaceName: *fireWallInterface,
+			File:          *fireWallFile,
+			device:        *device,
+			mode:          "firewall",
+			help:          *help}
 	default:
 		showhelp()
 		os.Exit(0)
@@ -276,6 +302,10 @@ func (p *packiffer) pcap(mode string) {
 	if mode == "inject" {
 		fmt.Printf("\nStarting Packiffer in inject mode\n")
 		p.injectPacket()
+	}
+	if mode == "firewall" {
+		fmt.Printf("\nStarting Packiffer in firewall mode\n")
+		p.runBPF()
 	}
 }
 
@@ -319,7 +349,7 @@ func main() {
 		showhelp()
 	}
 
-	if helpFlag == true {
+	if helpFlag {
 		showhelp()
 		os.Exit(0)
 	}

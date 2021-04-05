@@ -1,8 +1,10 @@
 module packiffer
 
-go 1.15
+go 1.16
 
 require (
+	github.com/dropbox/goebpf v0.0.0-20210223223402-d54e462ac389
 	github.com/google/gopacket v1.1.19
-	golang.org/x/sys v0.0.0-20210124154548-22da62e12c0c // indirect
+	github.com/jroimartin/gocui v0.4.0
+	github.com/nsf/termbox-go v1.1.0 // indirect
 )

@@ -3,9 +3,7 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/google/gopacket"
@@ -89,8 +87,6 @@ func (p *packiffer) packetInfo(packet *gopacket.Packet) {
 	}
 
 	fmt.Println("Press any key to inspect next packet")
-	reader := bufio.NewReader(os.Stdin)
-	text, _ := reader.ReadString('\n')
-	text = strings.Replace(text, "\n", "", -1)
-
+	var first string
+	fmt.Scanln(&first)
 }
