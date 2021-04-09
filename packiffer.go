@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 	"os/signal"
 	"syscall"
 	"time"
@@ -95,13 +96,31 @@ func isFlagPassed(name string, FlagSet *flag.FlagSet) bool {
 	return found
 }
 
-func ctrlCHandler() {
+func (p *packiffer) ctrlCHandler() {
 	c := make(chan os.Signal)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-c
 		fmt.Println("\r- Ctrl+C pressed in Terminal")
-		fmt.Println("packets successfully dumped")
+		if p.mode == "firewall" {
+
+			for i := 0; i < len(ipList); i++ {
+
+				cmd := exec.Command("netsh", "advfirewall", "firewall", "delete", "rule", "name="+ipList[0])
+
+				cmd.Stdin = os.Stdin
+				cmd.Stdout = os.Stdout
+				cmd.Stderr = os.Stderr
+
+				errs := cmd.Run()
+
+				if errs != nil {
+					fmt.Printf("%s\n", errs.Error())
+					os.Exit(1)
+				}
+
+			}
+		}
 		os.Exit(0)
 	}()
 }
@@ -305,7 +324,7 @@ func (p *packiffer) pcap(mode string) {
 	}
 	if mode == "firewall" {
 		fmt.Printf("\nStarting Packiffer in firewall mode\n")
-		p.runBPF()
+		p.firewall()
 	}
 }
 
@@ -337,9 +356,9 @@ func displayDevices(devices []pcap.Interface) {
 
 func main() {
 
-	ctrlCHandler()
-
 	p := getFlagsValue()
+
+	p.ctrlCHandler()
 
 	if p == nil {
 		os.Exit(0)
