@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"runtime"
 	"syscall"
 	"time"
 
@@ -86,6 +87,8 @@ var displayPackets bool
 var displayChart bool
 var packetLimit int
 
+var ipList ipAddressList
+
 func isFlagPassed(name string, FlagSet *flag.FlagSet) bool {
 	found := false
 	FlagSet.Visit(func(f *flag.Flag) {
@@ -102,7 +105,7 @@ func (p *packiffer) ctrlCHandler() {
 	go func() {
 		<-c
 		fmt.Println("\r- Ctrl+C pressed in Terminal")
-		if p.mode == "firewall" {
+		if p.mode == "firewall" && runtime.GOOS == "windows" {
 
 			for i := 0; i < len(ipList); i++ {
 
