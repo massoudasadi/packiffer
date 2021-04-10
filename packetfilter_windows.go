@@ -13,8 +13,6 @@ import (
 
 type ipAddressList []string
 
-var ipList ipAddressList
-
 func (p *packiffer) firewall() {
 
 	f, perr := os.Open(p.File)
