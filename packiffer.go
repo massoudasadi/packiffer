@@ -43,6 +43,7 @@ type packiffer struct {
 	File             string
 	buffer           gopacket.SerializeBuffer
 	options          gopacket.SerializeOptions
+	LinuxFirewall    string
 }
 
 var sniffInterfaceNameFlag bool
@@ -111,7 +112,26 @@ func (p *packiffer) ctrlCHandler() {
 
 			for i := 0; i < len(ipList); i++ {
 
-				cmd := exec.Command("netsh", "advfirewall", "firewall", "delete", "rule", "name="+ipList[0])
+				cmd := exec.Command("netsh", "advfirewall", "firewall", "delete", "rule", "name="+ipList[i])
+
+				cmd.Stdin = os.Stdin
+				cmd.Stdout = os.Stdout
+				cmd.Stderr = os.Stderr
+
+				errs := cmd.Run()
+
+				if errs != nil {
+					fmt.Printf("%s\n", errs.Error())
+					os.Exit(1)
+				}
+
+			}
+		}
+		if p.mode == "firewall" && runtime.GOOS == "linux" && p.LinuxFirewall == "ipTables" {
+
+			for i := 0; i < len(ipList); i++ {
+
+				cmd := exec.Command("iptables", "-D", "INPUT", "-s", ipList[i], "-j", "DROP")
 
 				cmd.Stdin = os.Stdin
 				cmd.Stdout = os.Stdout
