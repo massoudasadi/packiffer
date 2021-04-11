@@ -1,7 +1,7 @@
 <img src="./packiffer.png">
 
 # Packiffer
-Packiffer is a lightweight cross-platform networking toolkit that let you sniff/analyse/inject/filter packets.
+Packiffer is a lightweight cross-platform networking toolkit that let you sniff/analyze/inject/filter packets.
 
 <pre>
 Features:
