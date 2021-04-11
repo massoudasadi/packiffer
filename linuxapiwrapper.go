@@ -2,6 +2,14 @@
 
 package main
 
+import (
+	"fmt"
+	"log"
+	"os"
+
+	"github.com/google/gopacket/pcap"
+)
+
 func displayFriendlyInterfaceName() {
 	devices, err := pcap.FindAllDevs()
 	if err != nil {
