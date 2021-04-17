@@ -27,12 +27,29 @@ type InterfaceAddress struct {
 	P2P       net.IP
 }
 
+var deviceListGlobal []Interface
+
+func (p *packiffer) setInterfaceFriendlyName() {
+	devices, err := pcap.FindAllDevs()
+	if err != nil {
+		log.Fatal(err)
+	}
+	var deviceList = compare(devices)
+	deviceListGlobal = deviceList
+	for _, element := range deviceListGlobal {
+		if element.Name == p.interfaceName {
+			p.interfaceFriendlyName = element.FriendlyName
+		}
+	}
+}
+
 func displayFriendlyInterfaceName() {
 	devices, err := pcap.FindAllDevs()
 	if err != nil {
 		log.Fatal(err)
 	}
 	var deviceList = compare(devices)
+	deviceListGlobal = deviceList
 	displayDevices(deviceList)
 	os.Exit(0)
 }
@@ -125,7 +142,7 @@ func getmac() map[string][]string {
 func networkInterfaceList() []net.Interface {
 	ifaces, err := net.Interfaces()
 	if err != nil {
-		fmt.Print(fmt.Errorf("localAddresses: %+v\n", err.Error()))
+		fmt.Println(fmt.Errorf("localAddresses: %+v", err.Error()))
 		return nil
 	}
 	return ifaces
