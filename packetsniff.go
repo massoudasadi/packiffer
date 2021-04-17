@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"runtime"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -46,6 +48,9 @@ func (p *packiffer) openTransformPcap() {
 }
 
 func (p *packiffer) openLivePcap() {
+	if runtime.GOOS == "windows" {
+		p.setInterfaceFriendlyName()
+	}
 	p.handle, p.err = pcap.OpenLive(p.interfaceName, p.snapshotLen, p.promiscuous, p.timeout)
 	if p.err != nil {
 		log.Fatal(p.err)
@@ -109,20 +114,38 @@ func (p *packiffer) createSniffPcap(f **os.File) {
 		fmt.Println("packets dump in: " + p.outputFileName + ".pcap")
 	}
 	if sniffoutputdirectoryFlag && !sniffoutputfilenameFlag {
-		*f, err = os.Create(p.outputDirectory + "/" + p.interfaceName + ".pcap")
-		if err != nil {
-			fmt.Println("error in creating pcap file")
-			os.Exit(0)
+		if runtime.GOOS == "windows" {
+			*f, err = os.Create(p.outputDirectory + "/" + strings.TrimSpace(p.interfaceFriendlyName) + ".pcap")
+			if err != nil {
+				fmt.Println("error in creating pcap file")
+				os.Exit(0)
+			}
+			fmt.Println("packets dump in: " + p.outputDirectory + "/" + strings.TrimSpace(p.interfaceFriendlyName) + ".pcap")
+		} else {
+			*f, err = os.Create(p.outputDirectory + "/" + p.interfaceName + ".pcap")
+			if err != nil {
+				fmt.Println("error in creating pcap file")
+				os.Exit(0)
+			}
+			fmt.Println("packets dump in: " + p.outputDirectory + "/" + p.interfaceName + ".pcap")
 		}
-		fmt.Println("packets dump in: " + p.outputDirectory + "/" + p.interfaceName + ".pcap")
 	}
 	if !sniffoutputdirectoryFlag && !sniffoutputfilenameFlag {
-		*f, err = os.Create(p.interfaceName + ".pcap")
-		if err != nil {
-			fmt.Println("error in creating pcap file")
-			os.Exit(0)
+		if runtime.GOOS == "windows" {
+			*f, err = os.Create(strings.TrimSpace(p.interfaceFriendlyName) + ".pcap")
+			if err != nil {
+				fmt.Println("error in creating pcap file")
+				os.Exit(0)
+			}
+			fmt.Println("packets dump in: " + strings.TrimSpace(p.interfaceFriendlyName) + ".pcap")
+		} else {
+			*f, err = os.Create(p.interfaceName + ".pcap")
+			if err != nil {
+				fmt.Println("error in creating pcap file")
+				os.Exit(0)
+			}
+			fmt.Println("packets dump in: " + p.interfaceName + ".pcap")
 		}
-		fmt.Println("packets dump in: " + p.interfaceName + ".pcap")
 	}
 }
 
@@ -145,20 +168,22 @@ func (p *packiffer) createTransformPcap(f **os.File) {
 		fmt.Println("packets dump in: " + p.outputFileName + ".pcap")
 	}
 	if transformoutputdirectoryFlag && !transformoutputfilenameFlag {
-		*f, err = os.Create(p.outputDirectory + "/" + p.interfaceName + ".pcap")
+		dt := time.Now()
+		*f, err = os.Create(p.outputDirectory + "/" + dt.Format("02-11-1979-17:06:06") + ".pcap")
 		if err != nil {
 			fmt.Println("error in creating pcap file")
 			os.Exit(0)
 		}
-		fmt.Println("packets dump in: " + p.outputDirectory + "/" + p.interfaceName + ".pcap")
+		fmt.Println("packets dump in: " + p.outputDirectory + "/" + dt.Format("02-11-1979-17:06:06") + ".pcap")
 	}
 	if !transformoutputdirectoryFlag && !transformoutputfilenameFlag {
-		*f, err = os.Create(p.interfaceName + ".pcap")
+		dt := time.Now()
+		*f, err = os.Create(dt.Format("02-11-1979-17:06:06") + ".pcap")
 		if err != nil {
 			fmt.Println("error in creating pcap file")
 			os.Exit(0)
 		}
-		fmt.Println("packets dump in: " + p.interfaceName + ".pcap")
+		fmt.Println("packets dump in: " + dt.Format("02-11-1979-17:06:06") + ".pcap")
 	}
 }
 
