@@ -22,28 +22,29 @@ import (
 var snapshotLen uint32
 
 type packiffer struct {
-	interfaceName    string
-	promiscuous      bool
-	interfaceIndex   int
-	filter           string
-	socketDescriptor int
-	input            string
-	outputFileName   string
-	outputDirectory  string
-	limit            int
-	device           bool
-	snapshotLen      int32
-	help             bool
-	err              error
-	timeout          time.Duration
-	handle           *pcap.Handle
-	mode             string
-	Raw              bool
-	Constructed      bool
-	File             string
-	buffer           gopacket.SerializeBuffer
-	options          gopacket.SerializeOptions
-	LinuxFirewall    string
+	interfaceName         string
+	interfaceFriendlyName string
+	promiscuous           bool
+	interfaceIndex        int
+	filter                string
+	socketDescriptor      int
+	input                 string
+	outputFileName        string
+	outputDirectory       string
+	limit                 int
+	device                bool
+	snapshotLen           int32
+	help                  bool
+	err                   error
+	timeout               time.Duration
+	handle                *pcap.Handle
+	mode                  string
+	Raw                   bool
+	Constructed           bool
+	File                  string
+	buffer                gopacket.SerializeBuffer
+	options               gopacket.SerializeOptions
+	LinuxFirewall         string
 }
 
 var sniffInterfaceNameFlag bool
