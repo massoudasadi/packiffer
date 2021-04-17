@@ -40,7 +40,9 @@ Modes:
 # Prerequisites For Source
 <p>Golang v1.16</p>
 <p>GoPacket v1.1.19</p>
-<p>Go eBPF</p>
+<p>Go eBPF v0.0.0-20210223</p>
+<p>Termbox-Go v1.1.0</p>
+<p>GoCui v0.4.0</p>
 <p>Libpcap v1.9.1</p>
 <p>Clang/LLVM (Only on Linux for eBPF XDP packet filtering)</p>
 
