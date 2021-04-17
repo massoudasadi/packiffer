@@ -10,6 +10,10 @@ import (
 	"github.com/google/gopacket/pcap"
 )
 
+func (p *packiffer) setInterfaceFriendlyName() {
+
+}
+
 func displayFriendlyInterfaceName() {
 	devices, err := pcap.FindAllDevs()
 	if err != nil {
