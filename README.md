@@ -35,7 +35,7 @@ Modes:
 
 # Prerequisites For Binary
 <p>Libpcap v1.9.1</p>
-<p>Clang/LLVM (Only on Linux for eBPF packet filtering)</p>
+<p>Clang/LLVM (Only on Linux for eBPF XDP packet filtering)</p>
 <p>Iptables (Only on Linux for Iptables packet filtering)</p>
 
 # Prerequisites For Source
