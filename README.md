@@ -1,3 +1,5 @@
+[![Go Report Card](https://goreportcard.com/badge/github.com/massoudasadi/packiffer)](https://goreportcard.com/report/github.com/massoudasadi/packiffer)
+
 <img src="./packiffer.png">
 
 # Packiffer
