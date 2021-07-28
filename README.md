@@ -45,6 +45,7 @@ Modes:
 <p>GoPacket v1.1.19</p>
 <p>Go eBPF v0.0.0-20210223</p>
 <p>Libpcap v1.9.1</p>
+<p>Fiber v2.8.0</p>
 <p>Clang/LLVM (Only on Linux for eBPF XDP packet filtering)</p>
 <p>Iptables (Only on Linux for Iptables packet filtering)</p>
 

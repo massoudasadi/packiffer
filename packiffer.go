@@ -152,16 +152,6 @@ func (p *packiffer) ctrlCHandler() {
 }
 
 func showhelp() {
-	fmt.Printf("Usage of packiffer: \n")
-	fmt.Printf("-i <interfaceName>\n\t\tinterface name to interact.\t e.g. -i eth0\n")
-	fmt.Printf("-p\n\t\tpromiscuous mode\n")
-	fmt.Printf("-f <filter>\n\t\tfilter query to set.\t e.g. -f all\n")
-	fmt.Printf("-r <file>\n\t\tinput file to read.\t e.g. -r packet.pcap\n")
-	fmt.Printf("-w <file>\n\t\toutput file to write.\t e.g. -w packet.pcap\n")
-	fmt.Printf("-h\n\t\tdisplay help\n")
-	fmt.Printf("-d\n\t\tdisplay list of devices\n")
-	fmt.Printf("-c <file>\n\t\tlimit count of packets to sniff.\t e.g. -c 100\n")
-	fmt.Printf("-t <value>\n\t\tlimit sniffing timeout.\t e.g. -t 30\n")
 
 }
 
@@ -320,6 +310,10 @@ func getFlagsValue() *packiffer {
 			device:        *device,
 			mode:          "firewall",
 			help:          *help}
+
+	case "web":
+		web()
+
 	default:
 		showhelp()
 		os.Exit(0)
