@@ -1,3 +1,4 @@
 .vscode/*
 *.pcap
 packiffer.exe
+bpf_helpers.h
