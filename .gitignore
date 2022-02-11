@@ -1,5 +1,6 @@
 .vscode/*
 *.pcap
 packiffer.exe
+packiffer
 bpf_helpers.h
 *.elf
