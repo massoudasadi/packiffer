@@ -4,7 +4,7 @@ GOCLEAN := $(GOCMD) clean
 CLANG := clang
 CLANG_INCLUDE := -I../../.. 
 
-GO_SOURCE := src/core/packiffer.go
+GO_SOURCE := "./src/core/"
 GO_BINARY := packiffer
 
 EBPF_SOURCE := src/ebpf/xdp_block_address.c
@@ -24,5 +24,5 @@ clean:
 $(EBPF_BINARY): $(EBPF_SOURCE)
 	$(CLANG) $(CLANG_INCLUDE) -O2 -target bpf -c $^  -o $@
 
-$(GO_BINARY): $(GO_SOURCE)
-	$(GOBUILD) -v -o $@
+$(GO_BINARY):
+	$(GOBUILD) -v -o $@ $(GO_SOURCE)
