@@ -1,6 +1,6 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/massoudasadi/packiffer)](https://goreportcard.com/report/github.com/massoudasadi/packiffer)
 
-<img src="./packiffer.png">
+<img src="/assets/packiffer.png">
 
 # Packiffer
 Packiffer is a lightweight cross-platform networking toolkit that let you sniff/analyze/inject/filter packets.
