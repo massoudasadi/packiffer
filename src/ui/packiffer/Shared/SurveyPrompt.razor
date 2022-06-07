@@ -1,0 +1,66 @@
+﻿@implements IDisposable
+
+<div class="alert alert-secondary mt-4">
+    <span class="oi oi-pencil me-2" aria-hidden="true"></span>
+    <strong>@Title</strong>
+
+    <span class="text-nowrap">
+        Please take our
+        <a target="_blank" class="font-weight-bold link-dark" href="https://go.microsoft.com/fwlink/?linkid=2148851">brief survey</a>
+    </span>
+    and tell us what you think.
+</div>
+
+<form @onsubmit="@SendMessageAsync">
+    Message: <input @bind="@message" />
+    <button type="submit">Send</button>
+</form>
+
+<pre>@log</pre>
+
+
+@code {
+    // Demonstrates how a parent component can supply parameters
+    [Parameter]
+    public string? Title { get; set; }
+
+    CancellationTokenSource disposalTokenSource = new CancellationTokenSource();
+    ClientWebSocket webSocket = new ClientWebSocket();
+    string message = "Hello, websocket!";
+    string log = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await webSocket.ConnectAsync(new Uri("ws://localhost:33322/ws/123?v=1.0"), disposalTokenSource.Token);
+        _ = ReceiveLoop();
+    }
+
+    async Task SendMessageAsync()
+    {
+        log += $"Sending: {message}\n";
+        var dataToSend = new ArraySegment<byte>(Encoding.UTF8.GetBytes(message));
+        await webSocket.SendAsync(dataToSend, WebSocketMessageType.Text, true, disposalTokenSource.Token);
+    }
+
+    async Task ReceiveLoop()
+    {
+        var buffer = new ArraySegment<byte>(new byte[1024]);
+        while (!disposalTokenSource.IsCancellationRequested)
+        {
+            // Note that the received block might only be part of a larger message. If this applies in your scenario,
+            // check the received.EndOfMessage and consider buffering the blocks until that property is true.
+            // Or use a higher-level library such as SignalR.
+            var received = await webSocket.ReceiveAsync(buffer, disposalTokenSource.Token);
+            var receivedAsText = Encoding.UTF8.GetString(buffer.Array, 0, received.Count);
+            log += $"Received: {receivedAsText}\n";
+            StateHasChanged();
+        }
+    }
+
+    public void Dispose()
+    {
+        disposalTokenSource.Cancel();
+        _ = webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Bye", CancellationToken.None);
+    }
+
+}
