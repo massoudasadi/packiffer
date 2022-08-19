@@ -1,9 +1,41 @@
 ﻿@page "/"
+@inject HttpClient Http
+@inject IJSRuntime jsr
+@inject NavigationManager nav
 
-<PageTitle>Index</PageTitle>
+<WebSocket/>
 
-<h1>Hello, world!</h1>
+<PageTitle>Packiffer</PageTitle>
 
-Welcome to your new app.
+@code {
 
-<SurveyPrompt Title="How is Blazor working for you?" />
+	string? userdata = null;
+
+	private async Task<string?> GetJWT()
+	{
+		userdata = await jsr.InvokeAsync<string>("localStorage.getItem", "user").ConfigureAwait(false);
+		if (!string.IsNullOrWhiteSpace(userdata))
+		{
+			var dataArray = userdata.Split(';', 2);
+			if (dataArray.Length == 2)
+				return dataArray[1];
+		}
+		return null;
+	}
+
+	protected override async Task OnInitializedAsync()
+	{
+		await base.OnInitializedAsync();
+
+		var auth = GetJWT();
+		
+		if (auth is null)
+		{
+			nav.NavigateTo("/login");
+		}
+
+	}
+}
+
+
+

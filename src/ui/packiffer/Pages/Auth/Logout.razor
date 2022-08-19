@@ -1,0 +1,13 @@
+﻿@page "/logout"
+@inject IJSRuntime jsr
+@inject NavigationManager nav
+
+@code {
+
+	protected override async Task OnInitializedAsync()
+	{
+		await base.OnInitializedAsync();
+		await jsr.InvokeVoidAsync("localStorage.removeItem", "user").ConfigureAwait(false);
+		nav.NavigateTo("/");
+	}
+}
